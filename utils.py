@@ -65,7 +65,6 @@ def compute_word_pos(raw_text, wordpiece, word, offset):
 		if raw_ch == ' ':
 			continue
 		while wp_ch != raw_ch:
-			print('wp_ch=', wp_ch, 'raw_ch=', raw_ch)
 			if wp_pos < len(wordpiece[word_pos_end])-1:
 				wp_pos += 1
 			else:
@@ -81,3 +80,15 @@ def compute_word_pos(raw_text, wordpiece, word, offset):
 		wp_ch = wordpiece[word_pos_end][wp_pos]
 
 	return [word_pos_start, word_pos_end]
+
+def pad(tokens, pad_id):
+	max_len = 0
+	for i in range(len(tokens)):
+		if len(tokens[i]) > max_len:
+			max_len = len(tokens[i])
+	
+	for i in range(len(tokens)):
+		while len(tokens[i]) < max_len:
+			tokens[i].append(pad_id)
+	
+	return tokens
