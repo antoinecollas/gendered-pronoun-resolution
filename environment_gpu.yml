@@ -1,0 +1,19 @@
+name: coref
+channels:
+- pytorch
+- defaults
+dependencies:
+- cuda90
+- cudnn
+- numpy
+- ipython
+- jupyter
+- matplotlib
+- numpy
+- pip
+- python
+- pytorch
+- tqdm
+- pandas
+- pip:
+  - pytorch-pretrained-bert
