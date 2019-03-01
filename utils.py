@@ -1,6 +1,6 @@
 import pandas, sys
 import numpy as np
-from pytorch_pretrained_bert import BertTokenizer
+import torch
 
 class DataLoader():
 	def __init__(self, path, batch_size, shuffle=False):
@@ -92,3 +92,23 @@ def pad(tokens, pad_id):
 			tokens[i].append(pad_id)
 	
 	return tokens
+
+def get_vect_from_pos(encoded_layer, pos):
+	'''
+	encoded_layer: Tensor: encoded layer of shape [bs, max_len, hidden_size]
+	pos: Tensor: positions of pronoun, A, B. Shape: [bs, 3, 2]
+	'''
+	def get_vect(encoded_layer, pos):
+		vect = encoded_layer.new_zeros(encoded_layer.shape[0], encoded_layer.shape[2])
+		for i in range(pos.shape[0]):
+			vect[i] = torch.max(encoded_layer[i, pos[i,0]:pos[i,1]], dim=0)[0]
+		return vect
+	
+	pos_pronouns = pos[:,0,:]
+	vect_pronoun = get_vect(encoded_layer, pos_pronouns)
+	pos_A = pos[:,1,:]
+	vect_A = get_vect(encoded_layer, pos_A)
+	pos_B = pos[:,2,:]
+	vect_B = get_vect(encoded_layer, pos_B)
+
+	return [vect_pronoun, vect_A, vect_B]

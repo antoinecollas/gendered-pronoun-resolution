@@ -1,7 +1,9 @@
 import csv, os,sys, torch, logging
 from git import Repo
-from utils import DataLoader, compute_word_pos, pad
+from utils import DataLoader, compute_word_pos, pad, get_vect_from_pos
 from pytorch_pretrained_bert import BertTokenizer, BertModel
+
+DEBUG = True
 
 FOLDER = 'gap-coreference'
 if not os.path.exists(FOLDER):
@@ -13,12 +15,15 @@ print('RUNNING ON', DEVICE)
 TRAINING_PATH = os.path.join(FOLDER, 'gap-development.tsv')
 VAL_PATH = os.path.join(FOLDER, 'gap-validation.tsv')
 
-BERT_MODEL = 'bert-base-uncased'
-BATCH_SIZE = 32
+if DEBUG:
+    BERT_MODEL = 'bert-base-cased'
+    BATCH_SIZE = 2
+else:
+    BERT_MODEL = 'bert-large-cased'
+    BATCH_SIZE = 32
 
 data_training = DataLoader(TRAINING_PATH, BATCH_SIZE, shuffle=True)
 
-print('Columns:', data_training.get_col_names())
 print('Nb training examples:', len(data_training))
 
 # load pre-trained model tokenizer (vocabulary)
@@ -43,13 +48,16 @@ for X, Y in data_training:
         pos_A = compute_word_pos(row.Text, tokenized_text, row.A, row._4)
         pos_B = compute_word_pos(row.Text, tokenized_text, row.B, row._6)
         pos.append([pos_pronoun, pos_A, pos_B])
-    
+    pos = torch.Tensor(pos).long()
+
     tokens = pad(tokens, PAD_ID)
     tokens = torch.tensor(tokens).to(DEVICE)
-
+    attention_mask = torch.ones(tokens.shape).to(DEVICE)
+    attention_mask[tokens==PAD_ID] = 0
+    
     with torch.no_grad():
-        encoded_layers, _ = model(tokens)
+        encoded_layers, _ = model(tokens, attention_mask=attention_mask) #list of [bs, max_len, 768]
 
-    assert len(encoded_layers) == 12
-
-    sys.exit(0)    
+    vect_wordpiece = get_vect_from_pos(encoded_layers[len(encoded_layers)-1], pos)
+    res = torch.cat(vect_wordpiece, dim=1)
+    print(res.shape)
