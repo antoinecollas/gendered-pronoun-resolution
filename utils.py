@@ -115,6 +115,31 @@ def get_vect_from_pos(encoded_layer, pos):
 
 	return [vect_pronoun, vect_A, vect_B]
 
+def preprocess_data(X, Y, tokenizer, device, pad_id):
+	temp = torch.Tensor(Y.values.astype(int))
+	Y = torch.zeros((Y.shape[0], Y.shape[1]+1)) 
+	Y[:,1:3] = temp
+	Y[:,0] = 1 - Y.sum(dim=1)
+	Y = torch.argmax(Y, dim=1).to(device)
+
+	tokens, pos = list(), list()
+	for row in X.itertuples(index=False):
+		tokenized_text = tokenizer.tokenize(row.Text)
+		indexed_tokens = tokenizer.convert_tokens_to_ids(tokenized_text)
+		tokens.append(indexed_tokens)
+		pos_pronoun = compute_word_pos(row.Text, tokenized_text, row.Pronoun, row._2)
+		pos_A = compute_word_pos(row.Text, tokenized_text, row.A, row._4)
+		pos_B = compute_word_pos(row.Text, tokenized_text, row.B, row._6)
+		pos.append([pos_pronoun, pos_A, pos_B])
+	pos = torch.Tensor(pos).long()
+
+	tokens = pad(tokens, pad_id)
+	tokens = torch.tensor(tokens).to(device)
+	attention_mask = torch.ones(tokens.shape).to(device)
+	attention_mask[tokens==pad_id] = 0
+
+	return [tokens, Y, attention_mask, pos]
+
 def print_tensorboard(writer, scalars, epoch):
 	for key, value in scalars.items():
 		writer.add_scalar(key, value, epoch)

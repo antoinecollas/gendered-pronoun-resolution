@@ -1,7 +1,7 @@
 import csv, os,sys, torch, logging
 from tqdm import tqdm
 from git import Repo
-from utils import DataLoader, compute_word_pos, pad, get_vect_from_pos, print_tensorboard
+from utils import DataLoader, compute_word_pos, pad, get_vect_from_pos, preprocess_data, print_tensorboard
 from pytorch_pretrained_bert import BertTokenizer, BertModel
 from neural_nets import MLP
 from tensorboardX import SummaryWriter
@@ -25,12 +25,14 @@ if DEBUG:
     BERT_MODEL = 'bert-base-cased'
     classifier = MLP(3*768, 3) # output: nothing, A, B
     BATCH_SIZE = 2
+    EVALUATION_FREQUENCY = 2
 else:
     BERT_MODEL = 'bert-large-cased'
     classifier = MLP(3*1024, 3)
     BATCH_SIZE = 32
+    EVALUATION_FREQUENCY = 5
 
-classifier.train().to(DEVICE)
+classifier.to(DEVICE)
 print('number of parameters:', torch.nn.utils.parameters_to_vector(classifier.parameters()).shape[0])
 
 # load pre-trained Bert tokenizer (vocabulary)
@@ -44,54 +46,52 @@ Bert.eval()
 Bert.to(DEVICE)
 
 loss = torch.nn.CrossEntropyLoss()
-loss_values = list()
+loss_values, loss_values_eval = list(), list()
 optimizer = torch.optim.SGD(classifier.parameters(), lr = 0.01, momentum=0.9)
+# scheduler = torch.optim.MultiStepLR(optimizer, milestones=[50,100], gamma=0.1)
 
 for epoch in tqdm(range(NB_EPOCHS)):
+    # scheduler.step()
     data_training = DataLoader(TRAINING_PATH, BATCH_SIZE, shuffle=True, debug=DEBUG)
-    if epoch ==0:
-        print('len(data_training):', len(data_training))
 
     for X, Y in data_training:
-        temp = torch.Tensor(Y.values.astype(int))
-        Y = torch.zeros((Y.shape[0], Y.shape[1]+1)) 
-        Y[:,1:3] = temp
-        Y[:,0] = 1 - Y.sum(dim=1)
-        Y = torch.argmax(Y, dim=1).to(DEVICE)
-
-        # data pre processing
-        tokens, pos = list(), list()
-        for row in X.itertuples(index=False):
-            tokenized_text = tokenizer.tokenize(row.Text)
-            indexed_tokens = tokenizer.convert_tokens_to_ids(tokenized_text)
-            tokens.append(indexed_tokens)
-            pos_pronoun = compute_word_pos(row.Text, tokenized_text, row.Pronoun, row._2)
-            pos_A = compute_word_pos(row.Text, tokenized_text, row.A, row._4)
-            pos_B = compute_word_pos(row.Text, tokenized_text, row.B, row._6)
-            pos.append([pos_pronoun, pos_A, pos_B])
-        pos = torch.Tensor(pos).long()
-
-        tokens = pad(tokens, PAD_ID)
-        tokens = torch.tensor(tokens).to(DEVICE)
-        attention_mask = torch.ones(tokens.shape).to(DEVICE)
-        attention_mask[tokens==PAD_ID] = 0
+        tokens, Y, attention_mask, pos = preprocess_data(X, Y, tokenizer, DEVICE, PAD_ID)
         
         with torch.no_grad():
             encoded_layers, _ = Bert(tokens, attention_mask=attention_mask) #list of [bs, max_len, 768]
-
         vect_wordpiece = get_vect_from_pos(encoded_layers[len(encoded_layers)-1], pos)
         features = torch.cat(vect_wordpiece, dim=1)
-
+        
+        classifier.train()
         output = classifier(features)
+        
         optimizer.zero_grad()
         output = loss(output, Y)
         loss_values.append(output.item())
         output.backward()
         optimizer.step()
 
-    scalars = {
-        'training/loss': np.mean(loss_values),
-        'training/gradient_norm': torch.norm(torch.nn.utils.parameters_to_vector(classifier.parameters()), p=2),   
-    }
-    print_tensorboard(writer, scalars, epoch)
-    torch.save(classifier.state_dict(), 'weights_classifier')
+    if epoch%EVALUATION_FREQUENCY == 0:
+        data_eval = DataLoader(VAL_PATH, BATCH_SIZE, shuffle=True, debug=DEBUG)
+        for X, Y in data_eval:
+            tokens, Y, attention_mask, pos = preprocess_data(X, Y, tokenizer, DEVICE, PAD_ID)
+            
+            with torch.no_grad():
+                encoded_layers, _ = Bert(tokens, attention_mask=attention_mask) #list of [bs, max_len, 768]
+            vect_wordpiece = get_vect_from_pos(encoded_layers[len(encoded_layers)-1], pos)
+            features = torch.cat(vect_wordpiece, dim=1)
+            
+            classifier.eval()
+            with torch.no_grad():
+                output = classifier(features)
+            output = loss(output, Y)
+            loss_values_eval.append(output.item())
+
+        scalars = {
+            'training/loss': np.mean(loss_values),
+            'training/gradient_norm': torch.norm(torch.nn.utils.parameters_to_vector(classifier.parameters()), p=2),
+            'eval/loss'  : np.mean(loss_values_eval)
+        }
+        print_tensorboard(writer, scalars, epoch)
+        loss_values, loss_values_eval = list(), list()
+        torch.save(classifier.state_dict(), 'weights_classifier')
