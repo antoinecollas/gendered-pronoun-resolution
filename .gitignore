@@ -1,3 +1,6 @@
 .vscode/
-papers/*
+.DS_store
+__pycache__/
+papers/
 gap-coreference/
+runs/

@@ -16,3 +16,4 @@ dependencies:
 - pip:
   - pytorch-pretrained-bert
   - GitPython
+  - tensorboardX

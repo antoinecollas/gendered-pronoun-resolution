@@ -3,8 +3,10 @@ import numpy as np
 import torch
 
 class DataLoader():
-	def __init__(self, path, batch_size, shuffle=False):
+	def __init__(self, path, batch_size, shuffle=False, debug=False):
 		self.data = pandas.read_csv(path, delimiter='\t')
+		if debug:
+			self.data = self.data.iloc[0:10]
 		self.batch_size = batch_size
 		self.current_idx = 0
 		self.order = np.arange(len(self.data))
@@ -21,7 +23,7 @@ class DataLoader():
 		return self
 	
 	def __next__(self):
-		if self.current_idx>len(self.data):
+		if self.current_idx>=len(self.data):
 			raise StopIteration
 		temp = self.current_idx
 		self.current_idx += self.batch_size
@@ -112,3 +114,7 @@ def get_vect_from_pos(encoded_layer, pos):
 	vect_B = get_vect(encoded_layer, pos_B)
 
 	return [vect_pronoun, vect_A, vect_B]
+
+def print_tensorboard(writer, scalars, epoch):
+	for key, value in scalars.items():
+		writer.add_scalar(key, value, epoch)
