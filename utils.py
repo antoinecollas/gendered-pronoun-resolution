@@ -118,8 +118,8 @@ def get_vect_from_pos(encoded_layer, pos):
 def preprocess_data(X, Y, tokenizer, device, pad_id):
 	temp = torch.Tensor(Y.values.astype(int))
 	Y = torch.zeros((Y.shape[0], Y.shape[1]+1)) 
-	Y[:,1:3] = temp
-	Y[:,0] = 1 - Y.sum(dim=1)
+	Y[:,0:2] = temp
+	Y[:,3] = 1 - Y.sum(dim=1)
 	Y = torch.argmax(Y, dim=1).to(device)
 
 	tokens, pos = list(), list()

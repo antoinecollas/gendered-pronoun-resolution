@@ -23,7 +23,7 @@ NB_EPOCHS = 1000
 
 if DEBUG:
     BERT_MODEL = 'bert-base-cased'
-    classifier = MLP(3*768, 3) # output: nothing, A, B
+    classifier = MLP(3*768, 3) # output: A, B, neither
     BATCH_SIZE = 2
     EVALUATION_FREQUENCY = 2
 else:
