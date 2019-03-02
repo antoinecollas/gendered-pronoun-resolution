@@ -8,15 +8,14 @@ from tensorboardX import SummaryWriter
 import numpy as np
 
 DEBUG = False
+
+DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print('RUNNING ON', DEVICE)
 writer = SummaryWriter()
 
 FOLDER = 'gap-coreference'
 if not os.path.exists(FOLDER):
     Repo.clone_from('https://github.com/google-research-datasets/gap-coreference', FOLDER)
-
-DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print('RUNNING ON', DEVICE)
-
 TRAINING_PATH = os.path.join(FOLDER, 'gap-development.tsv')
 VAL_PATH = os.path.join(FOLDER, 'gap-validation.tsv')
 
