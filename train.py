@@ -48,10 +48,10 @@ Bert.to(DEVICE)
 loss = torch.nn.CrossEntropyLoss()
 loss_values, loss_values_eval = list(), list()
 optimizer = torch.optim.SGD(classifier.parameters(), lr = 0.01, momentum=0.9)
-# scheduler = torch.optim.MultiStepLR(optimizer, milestones=[50,100], gamma=0.1)
+scheduler = torch.optim.MultiStepLR(optimizer, milestones=[40,100], gamma=0.1)
 
 for epoch in tqdm(range(NB_EPOCHS)):
-    # scheduler.step()
+    scheduler.step()
     data_training = DataLoader(TRAINING_PATH, BATCH_SIZE, shuffle=True, debug=DEBUG)
 
     for X, Y in data_training:
