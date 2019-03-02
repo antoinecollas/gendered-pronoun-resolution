@@ -13,11 +13,11 @@ DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print('RUNNING ON', DEVICE)
 writer = SummaryWriter()
 
-FOLDER = 'gap-coreference'
-if not os.path.exists(FOLDER):
-    Repo.clone_from('https://github.com/google-research-datasets/gap-coreference', FOLDER)
-TRAINING_PATH = os.path.join(FOLDER, 'gap-development.tsv')
-VAL_PATH = os.path.join(FOLDER, 'gap-validation.tsv')
+FOLDER_DATA = 'gap-coreference'
+if not os.path.exists(FOLDER_DATA):
+    Repo.clone_from('https://github.com/google-research-datasets/gap-coreference', FOLDER_DATA)
+TRAINING_PATH = os.path.join(FOLDER_DATA, 'gap-development.tsv')
+VAL_PATH = os.path.join(FOLDER_DATA, 'gap-validation.tsv')
 
 NB_EPOCHS = 1000
 
@@ -94,4 +94,4 @@ for epoch in tqdm(range(NB_EPOCHS)):
         'training/gradient_norm': torch.norm(torch.nn.utils.parameters_to_vector(classifier.parameters()), p=2),   
     }
     print_tensorboard(writer, scalars, epoch)
-    
+    torch.save(classifier.state_dict(), 'weights_classifier')
