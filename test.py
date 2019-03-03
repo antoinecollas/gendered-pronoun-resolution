@@ -6,7 +6,7 @@ from pytorch_pretrained_bert import BertTokenizer, BertModel
 from neural_nets import MLP
 import numpy as np
 
-DEBUG = True
+DEBUG = False
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print('RUNNING ON', DEVICE)
