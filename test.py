@@ -19,8 +19,8 @@ TEST_PATH = os.path.join(FOLDER_DATA, 'gap-development.tsv')
 FOLDER_RESULTS = 'results'
 if not os.path.exists(FOLDER_RESULTS):
     os.mkdir(FOLDER_RESULTS)
-TEST_PRED_GAP_SCORER_PATH = os.path.join(FOLDER_RESULTS, 'gap-pred-scorer-test.tsv')
-TEST_PRED_KAGGLE_PATH = os.path.join(FOLDER_RESULTS, 'gap-pred-kaggle-test.csv')
+TEST_PRED_GAP_SCORER_PATH = os.path.join(FOLDER_RESULTS, 'gap-pred-scorer-development.tsv')
+TEST_PRED_KAGGLE_PATH = os.path.join(FOLDER_RESULTS, 'gap-pred-kaggle-development.csv')
 
 PATH_WEIGHTS = 'weights_classifier'
 

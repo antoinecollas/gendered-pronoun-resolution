@@ -6,4 +6,4 @@ conda activate coref
 python train.py
 python test.py
 cd gap_coreference
-python gap_scorer.py --gold_tsv gap-test.tsv --system_tsv ../results/gap-pred-scorer-test.tsv
+python gap_scorer.py --gold_tsv gap-development.tsv --system_tsv ../results/gap-pred-scorer-development.tsv
