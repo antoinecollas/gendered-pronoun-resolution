@@ -16,7 +16,7 @@ writer = SummaryWriter()
 FOLDER_DATA = 'gap_coreference'
 if not os.path.exists(FOLDER_DATA):
     Repo.clone_from('https://github.com/antoinecollas/gap-coreference', FOLDER_DATA)
-TRAINING_PATH = os.path.join(FOLDER_DATA, 'gap-development.tsv')
+TRAINING_PATH = os.path.join(FOLDER_DATA, 'gap-test.tsv')
 VAL_PATH = os.path.join(FOLDER_DATA, 'gap-validation.tsv')
 
 NB_EPOCHS = 1000

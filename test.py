@@ -14,13 +14,13 @@ print('RUNNING ON', DEVICE)
 FOLDER_DATA = 'gap_coreference'
 if not os.path.exists(FOLDER_DATA):
     Repo.clone_from('https://github.com/antoinecollas/gap-coreference', FOLDER_DATA)
-TEST_PATH = os.path.join(FOLDER_DATA, 'gap-test.tsv')
+TEST_PATH = os.path.join(FOLDER_DATA, 'gap-development.tsv')
 
 FOLDER_RESULTS = 'results'
 if not os.path.exists(FOLDER_RESULTS):
     os.mkdir(FOLDER_RESULTS)
-# TEST_PRED_KAGGLE_PATH = 'gap-pred-kaggle-test.csv'
 TEST_PRED_GAP_SCORER_PATH = os.path.join(FOLDER_RESULTS, 'gap-pred-scorer-test.tsv')
+TEST_PRED_KAGGLE_PATH = os.path.join(FOLDER_RESULTS, 'gap-pred-kaggle-test.csv')
 
 PATH_WEIGHTS = 'weights_classifier'
 
@@ -66,11 +66,11 @@ for X, Y in tqdm(data_test):
         loss_values.append(loss_value.item())
         predictions.append(np.array([X.iloc[0]['ID'], output[0][0].item(), output[0][1].item(), output[0][2].item()]))
 
-print('Loss on test set:', np.mean(loss_values))
+print('Loss on development set:', np.mean(loss_values))
 
 with open(TEST_PRED_GAP_SCORER_PATH, 'w', encoding='utf8', newline='') as tsv_file:
-    csv_writer = csv.writer(tsv_file, delimiter='\t', lineterminator='\n')
-    # csv_writer.writerow(['ID', 'A-coref', 'B-coref'])
+    tsv_writer = csv.writer(tsv_file, delimiter='\t', lineterminator='\n')
+    # tsv_writer.writerow(['ID', 'A-coref', 'B-coref'])
     for prediction in predictions:
         argmax = np.argmax(prediction[1:])
         if argmax == 0:
@@ -79,4 +79,10 @@ with open(TEST_PRED_GAP_SCORER_PATH, 'w', encoding='utf8', newline='') as tsv_fi
             to_write = ['FALSE', 'TRUE']
         else:
             to_write = ['FALSE', 'FALSE']
-        csv_writer.writerow([prediction[0], *to_write])
+        tsv_writer.writerow([prediction[0], *to_write])
+
+with open(TEST_PRED_KAGGLE_PATH, 'w', encoding='utf8', newline='') as csv_file:
+    csv_writer = csv.writer(csv_file, delimiter=',', lineterminator='\n')
+    csv_writer.writerow(['ID', 'A', 'B', 'NEITHER'])
+    for prediction in predictions:
+        csv_writer.writerow(prediction)
