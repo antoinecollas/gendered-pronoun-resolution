@@ -28,7 +28,7 @@ class DataLoader():
 		temp = self.current_idx
 		self.current_idx += self.batch_size
 		indices = self.order[temp:self.current_idx]
-		X =  self.data[['Text', 'Pronoun', 'Pronoun-offset', 'A', 'A-offset', 'B', 'B-offset']].iloc[indices]
+		X =  self.data[['ID', 'Text', 'Pronoun', 'Pronoun-offset', 'A', 'A-offset', 'B', 'B-offset']].iloc[indices]
 		Y =  self.data[['A-coref', 'B-coref']].iloc[indices]
 		return X, Y
 
@@ -127,9 +127,9 @@ def preprocess_data(X, Y, tokenizer, device, pad_id):
 		tokenized_text = tokenizer.tokenize(row.Text)
 		indexed_tokens = tokenizer.convert_tokens_to_ids(tokenized_text)
 		tokens.append(indexed_tokens)
-		pos_pronoun = compute_word_pos(row.Text, tokenized_text, row.Pronoun, row._2)
-		pos_A = compute_word_pos(row.Text, tokenized_text, row.A, row._4)
-		pos_B = compute_word_pos(row.Text, tokenized_text, row.B, row._6)
+		pos_pronoun = compute_word_pos(row.Text, tokenized_text, row.Pronoun, row._3)
+		pos_A = compute_word_pos(row.Text, tokenized_text, row.A, row._5)
+		pos_B = compute_word_pos(row.Text, tokenized_text, row.B, row._7)
 		pos.append([pos_pronoun, pos_A, pos_B])
 	pos = torch.Tensor(pos).long()
 

@@ -13,9 +13,9 @@ DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print('RUNNING ON', DEVICE)
 writer = SummaryWriter()
 
-FOLDER_DATA = 'gap-coreference'
+FOLDER_DATA = 'gap_coreference'
 if not os.path.exists(FOLDER_DATA):
-    Repo.clone_from('https://github.com/google-research-datasets/gap-coreference', FOLDER_DATA)
+    Repo.clone_from('https://github.com/antoinecollas/gap-coreference', FOLDER_DATA)
 TRAINING_PATH = os.path.join(FOLDER_DATA, 'gap-development.tsv')
 VAL_PATH = os.path.join(FOLDER_DATA, 'gap-validation.tsv')
 
@@ -53,6 +53,7 @@ scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[40,100],
 for epoch in tqdm(range(NB_EPOCHS)):
     scheduler.step()
     data_training = DataLoader(TRAINING_PATH, BATCH_SIZE, shuffle=True, debug=DEBUG)
+    classifier.train()
 
     for X, Y in data_training:
         tokens, Y, attention_mask, pos = preprocess_data(X, Y, tokenizer, DEVICE, PAD_ID)
@@ -62,7 +63,6 @@ for epoch in tqdm(range(NB_EPOCHS)):
         vect_wordpiece = get_vect_from_pos(encoded_layers[len(encoded_layers)-1], pos)
         features = torch.cat(vect_wordpiece, dim=1)
         
-        classifier.train()
         output = classifier(features)
         
         optimizer.zero_grad()
@@ -73,6 +73,7 @@ for epoch in tqdm(range(NB_EPOCHS)):
 
     if epoch%EVALUATION_FREQUENCY == 0:
         data_eval = DataLoader(VAL_PATH, BATCH_SIZE, shuffle=True, debug=DEBUG)
+        classifier.eval()
         for X, Y in data_eval:
             tokens, Y, attention_mask, pos = preprocess_data(X, Y, tokenizer, DEVICE, PAD_ID)
             
@@ -81,7 +82,6 @@ for epoch in tqdm(range(NB_EPOCHS)):
             vect_wordpiece = get_vect_from_pos(encoded_layers[len(encoded_layers)-1], pos)
             features = torch.cat(vect_wordpiece, dim=1)
             
-            classifier.eval()
             with torch.no_grad():
                 output = classifier(features)
             output = loss(output, Y)
