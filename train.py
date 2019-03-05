@@ -91,7 +91,7 @@ for epoch in tqdm(range(NB_EPOCHS)):
                 output = classifier(features)
             loss_value = loss(output, Y)
             loss_values_eval.append(loss_value.item())
-            log_loss_values_eval.append(log_loss(output, Y))
+            log_loss_values_eval.append(log_loss(output, Y).item())
 
         # the losses are not totally corect because it assumes that all batch have the same size whereas the last one is often smaller
         scalars = {
