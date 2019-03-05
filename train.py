@@ -30,7 +30,7 @@ if DEBUG:
     BERT_MODEL = 'bert-base-cased'
     classifier = MLP(3*768, 3) # output: A, B, neither
     BATCH_SIZE = 2
-    EVALUATION_FREQUENCY = 2
+    EVALUATION_FREQUENCY = 1
 else:
     BERT_MODEL = 'bert-large-cased'
     classifier = MLP(3*1024, 3)
@@ -51,7 +51,7 @@ Bert.eval()
 Bert.to(DEVICE)
 
 loss = torch.nn.CrossEntropyLoss()
-loss_values, loss_values_eval = list(), list()
+loss_values, loss_values_eval, log_loss_values_eval = list(), list(), list()
 optimizer = torch.optim.SGD(classifier.parameters(), lr = 0.01, momentum=0.9)
 scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[40,100], gamma=0.1)
 
@@ -89,14 +89,17 @@ for epoch in tqdm(range(NB_EPOCHS)):
             
             with torch.no_grad():
                 output = classifier(features)
-            output = loss(output, Y)
-            loss_values_eval.append(output.item())
+            loss_value = loss(output, Y)
+            loss_values_eval.append(loss_value.item())
+            log_loss_values_eval.append(log_loss(output, Y))
 
+        # the losses are not totally corect because it assumes that all batch have the same size whereas the last one is often smaller
         scalars = {
-            'training/loss': np.mean(loss_values),
+            'training/cross_entropy': np.mean(loss_values),
             'training/gradient_norm': torch.norm(torch.nn.utils.parameters_to_vector(classifier.parameters()), p=2),
-            'eval/loss'  : np.mean(loss_values_eval)
+            'eval/cross_entropy'  : np.mean(loss_values_eval),
+            'eval/log_loss'  : np.mean(log_loss_values_eval)
         }
         print_tensorboard(writer, scalars, epoch)
-        loss_values, loss_values_eval = list(), list()
+        loss_values, loss_values_eval, log_loss_values_eval = list(), list(), list()
         torch.save(classifier.state_dict(), 'weights_classifier')
