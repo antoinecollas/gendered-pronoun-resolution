@@ -1,13 +1,18 @@
-import csv, os,sys, torch, logging
+import csv, os, sys, torch, argparse
 from tqdm import tqdm
 from git import Repo
-from utils import DataLoader, compute_word_pos, pad, get_vect_from_pos, preprocess_data, print_tensorboard
+from utils import DataLoader, compute_word_pos, pad, get_vect_from_pos, preprocess_data, print_tensorboard, log_loss
 from pytorch_pretrained_bert import BertTokenizer, BertModel
 from neural_nets import MLP
 from tensorboardX import SummaryWriter
 import numpy as np
 
-DEBUG = False
+parser = argparse.ArgumentParser(description='Training model for coreference.')
+parser.add_argument('--debug', help='Debug mode.', action='store_true')
+args = parser.parse_args()
+DEBUG = args.debug
+if DEBUG:
+    print('============ DEBUG ============')
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print('RUNNING ON', DEVICE)
