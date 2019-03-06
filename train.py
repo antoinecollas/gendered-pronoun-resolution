@@ -104,7 +104,7 @@ for epoch in tqdm(range(NB_EPOCHS)):
         # the losses are not totally correct because it assumes that all batch have the same size whereas the last one is often smaller
         scalars = {
             'training/cross_entropy': np.mean(loss_values),
-            'training/gradient_norm': torch.norm(torch.nn.utils.parameters_to_vector(classifier.parameters()), p=2),
+            'training/gradient_norm': torch.norm(torch.nn.utils.parameters_to_vector(list(pooling.parameters()) + list(classifier.parameters())), p=2),
             'eval/cross_entropy'  : np.mean(loss_values_eval),
             'eval/log_loss'  : np.mean(log_loss_values_eval)
         }
