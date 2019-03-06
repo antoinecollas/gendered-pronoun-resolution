@@ -101,9 +101,10 @@ def get_vect_from_pos(encoded_layer, pos):
 	pos: Tensor: positions of pronoun, A, B. Shape: [bs, 3, 2]
 	'''
 	def get_vect(encoded_layer, pos):
-		vect = encoded_layer.new_zeros(encoded_layer.shape[0], encoded_layer.shape[2])
+		vect = list()
 		for i in range(pos.shape[0]):
-			vect[i] = torch.max(encoded_layer[i, pos[i,0]:pos[i,1]], dim=0)[0]
+			vect.append(encoded_layer.new_zeros(encoded_layer.shape[0], pos[i,1]-pos[i,0]+1, encoded_layer.shape[2]))
+			vect[len(vect)-1] = encoded_layer[i, pos[i,0]:pos[i,1]]
 		return vect
 	
 	pos_pronouns = pos[:,0,:]

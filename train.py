@@ -3,7 +3,7 @@ from tqdm import tqdm
 from git import Repo
 from utils import DataLoader, compute_word_pos, pad, get_vect_from_pos, preprocess_data, print_tensorboard, log_loss
 from pytorch_pretrained_bert import BertTokenizer, BertModel
-from neural_nets import MLP
+from neural_nets import MLP, Pooling
 from tensorboardX import SummaryWriter
 import numpy as np
 
@@ -24,21 +24,28 @@ if not os.path.exists(FOLDER_DATA):
 TRAINING_PATH = os.path.join(FOLDER_DATA, 'gap-test.tsv')
 VAL_PATH = os.path.join(FOLDER_DATA, 'gap-validation.tsv')
 
+PATH_WEIGHTS_POOLING = 'weights_pooling'
+PATH_WEIGHTS_CLASSIFIER = 'weights_classifier'
+
 NB_EPOCHS = 1000
+D_PROJ = 256
+
+classifier = MLP(3*D_PROJ, 3)
+classifier.train().to(DEVICE)
 
 if DEBUG:
     BERT_MODEL = 'bert-base-cased'
-    classifier = MLP(3*768, 3) # output: A, B, neither
+    pooling = Pooling(768, D_PROJ).train().to(DEVICE)
     BATCH_SIZE = 2
     EVALUATION_FREQUENCY = 1
 else:
     BERT_MODEL = 'bert-large-cased'
-    classifier = MLP(3*1024, 3)
+    pooling = Pooling(1024, D_PROJ).train().to(DEVICE)
     BATCH_SIZE = 32
     EVALUATION_FREQUENCY = 5
 
-classifier.to(DEVICE)
-print('number of parameters:', torch.nn.utils.parameters_to_vector(classifier.parameters()).shape[0])
+print('number of parameters in pooling:', torch.nn.utils.parameters_to_vector(pooling.parameters()).shape[0])
+print('number of parameters in classifier:', torch.nn.utils.parameters_to_vector(classifier.parameters()).shape[0])
 
 # load pre-trained Bert tokenizer (vocabulary)
 tokenizer = BertTokenizer.from_pretrained(BERT_MODEL)
@@ -47,16 +54,13 @@ PAD_ID = tokenizer.convert_tokens_to_ids(pad_token)[0]
 
 # load pretrained Bert
 Bert = BertModel.from_pretrained(BERT_MODEL)
-Bert.eval()
-Bert.to(DEVICE)
+Bert.eval().to(DEVICE)
 
 loss = torch.nn.CrossEntropyLoss()
 loss_values, loss_values_eval, log_loss_values_eval = list(), list(), list()
-optimizer = torch.optim.SGD(classifier.parameters(), lr = 0.01, momentum=0.9)
-scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[40,100], gamma=0.1)
+optimizer = torch.optim.Adam(list(pooling.parameters()) + list(classifier.parameters()), lr = 0.0001)
 
 for epoch in tqdm(range(NB_EPOCHS)):
-    scheduler.step()
     data_training = DataLoader(TRAINING_PATH, BATCH_SIZE, shuffle=True, debug=DEBUG)
     classifier.train()
 
@@ -66,14 +70,16 @@ for epoch in tqdm(range(NB_EPOCHS)):
         with torch.no_grad():
             encoded_layers, _ = Bert(tokens, attention_mask=attention_mask) #list of [bs, max_len, 768]
         vect_wordpiece = get_vect_from_pos(encoded_layers[len(encoded_layers)-1], pos)
-        features = torch.cat(vect_wordpiece, dim=1)
-        
+        features = pooling(vect_wordpiece)
+        features = torch.cat(features, dim=1)
+
         output = classifier(features)
         
         optimizer.zero_grad()
         output = loss(output, Y)
         loss_values.append(output.item())
         output.backward()
+        torch.nn.utils.clip_grad_norm_(list(pooling.parameters()) + list(classifier.parameters()), max_norm=5, norm_type=2)
         optimizer.step()
 
     if epoch%EVALUATION_FREQUENCY == 0:
@@ -85,15 +91,17 @@ for epoch in tqdm(range(NB_EPOCHS)):
             with torch.no_grad():
                 encoded_layers, _ = Bert(tokens, attention_mask=attention_mask) #list of [bs, max_len, 768]
             vect_wordpiece = get_vect_from_pos(encoded_layers[len(encoded_layers)-1], pos)
-            features = torch.cat(vect_wordpiece, dim=1)
-            
+            features = pooling(vect_wordpiece)
+            features = torch.cat(features, dim=1)
+
             with torch.no_grad():
                 output = classifier(features)
+
             loss_value = loss(output, Y)
             loss_values_eval.append(loss_value.item())
             log_loss_values_eval.append(log_loss(output, Y).item())
 
-        # the losses are not totally corect because it assumes that all batch have the same size whereas the last one is often smaller
+        # the losses are not totally correct because it assumes that all batch have the same size whereas the last one is often smaller
         scalars = {
             'training/cross_entropy': np.mean(loss_values),
             'training/gradient_norm': torch.norm(torch.nn.utils.parameters_to_vector(classifier.parameters()), p=2),
@@ -102,4 +110,5 @@ for epoch in tqdm(range(NB_EPOCHS)):
         }
         print_tensorboard(writer, scalars, epoch)
         loss_values, loss_values_eval, log_loss_values_eval = list(), list(), list()
-        torch.save(classifier.state_dict(), 'weights_classifier')
+        torch.save(pooling.state_dict(), PATH_WEIGHTS_POOLING)
+        torch.save(classifier.state_dict(), PATH_WEIGHTS_CLASSIFIER)

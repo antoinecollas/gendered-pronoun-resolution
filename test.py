@@ -3,7 +3,7 @@ from tqdm import tqdm
 from git import Repo
 from utils import DataLoader, compute_word_pos, pad, get_vect_from_pos, preprocess_data, print_tensorboard
 from pytorch_pretrained_bert import BertTokenizer, BertModel
-from neural_nets import MLP
+from neural_nets import MLP, Pooling
 import numpy as np
 
 parser = argparse.ArgumentParser(description='Training model for coreference.')
@@ -27,21 +27,29 @@ if not os.path.exists(FOLDER_RESULTS):
 TEST_PRED_GAP_SCORER_PATH = os.path.join(FOLDER_RESULTS, 'gap-pred-scorer-development.tsv')
 TEST_PRED_KAGGLE_PATH = os.path.join(FOLDER_RESULTS, 'gap-pred-kaggle-development.csv')
 
-PATH_WEIGHTS = 'weights_classifier'
+PATH_WEIGHTS_POOLING = 'weights_pooling'
+PATH_WEIGHTS_CLASSIFIER = 'weights_classifier'
 
 BATCH_SIZE = 1 #don't change it
+D_PROJ = 256
 
 if DEBUG:
     BERT_MODEL = 'bert-base-cased'
-    classifier = MLP(3*768, 3) # output: nothing, A, B
+    pooling = Pooling(768, D_PROJ)
+    EVALUATION_FREQUENCY = 1
 else:
     BERT_MODEL = 'bert-large-cased'
-    classifier = MLP(3*1024, 3)
+    pooling = Pooling(1024, D_PROJ)
+    EVALUATION_FREQUENCY = 5
 
-classifier.eval()
-classifier.to(DEVICE)
-classifier.load_state_dict(torch.load(PATH_WEIGHTS))
-print('number of parameters:', torch.nn.utils.parameters_to_vector(classifier.parameters()).shape[0])
+pooling.eval().to(DEVICE)
+pooling.load_state_dict(torch.load(PATH_WEIGHTS_POOLING))
+classifier = MLP(3*D_PROJ, 3)
+classifier.eval().to(DEVICE)
+classifier.load_state_dict(torch.load(PATH_WEIGHTS_CLASSIFIER))
+
+print('number of parameters in pooling:', torch.nn.utils.parameters_to_vector(pooling.parameters()).shape[0])
+print('number of parameters in classifier:', torch.nn.utils.parameters_to_vector(classifier.parameters()).shape[0])
 
 tokenizer = BertTokenizer.from_pretrained(BERT_MODEL)
 pad_token = tokenizer.tokenize("[PAD]")
@@ -63,7 +71,8 @@ for X, Y in tqdm(data_test):
     with torch.no_grad():
         encoded_layers, _ = Bert(tokens, attention_mask=attention_mask) #list of [bs, max_len, 768]
         vect_wordpiece = get_vect_from_pos(encoded_layers[len(encoded_layers)-1], pos)
-        features = torch.cat(vect_wordpiece, dim=1)
+        features = pooling(vect_wordpiece)
+        features = torch.cat(features, dim=1)
 
         output = classifier(features)
 
@@ -71,7 +80,7 @@ for X, Y in tqdm(data_test):
         loss_values.append(loss_value.item())
         predictions.append(np.array([X.iloc[0]['ID'], output[0][0].item(), output[0][1].item(), output[0][2].item()]))
 
-print('Loss on development set:', np.mean(loss_values))
+print('Loss (cross entropy) on development set:', np.mean(loss_values))
 
 with open(TEST_PRED_GAP_SCORER_PATH, 'w', encoding='utf8', newline='') as tsv_file:
     tsv_writer = csv.writer(tsv_file, delimiter='\t', lineterminator='\n')
