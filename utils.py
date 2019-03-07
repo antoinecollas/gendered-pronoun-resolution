@@ -103,7 +103,7 @@ def get_vect_from_pos(encoded_layer, pos):
 	def get_vect(encoded_layer, pos):
 		vect = list()
 		for i in range(pos.shape[0]):
-			vect.append(encoded_layer.new_zeros(encoded_layer.shape[0], pos[i,1]-pos[i,0]+1, encoded_layer.shape[2]))
+			vect.append(encoded_layer.new_zeros(pos[i,1]-pos[i,0]+1, encoded_layer.shape[2]))
 			vect[len(vect)-1] = encoded_layer[i, pos[i,0]:pos[i,1]]
 		return vect
 	
