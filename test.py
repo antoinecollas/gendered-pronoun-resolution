@@ -6,7 +6,7 @@ from pytorch_pretrained_bert import BertTokenizer, BertModel
 from neural_nets import MLP, Pooling
 import numpy as np
 
-parser = argparse.ArgumentParser(description='Training model for coreference.')
+parser = argparse.ArgumentParser(description='Testing model for coreference.')
 parser.add_argument('--debug', help='Debug mode.', action='store_true')
 args = parser.parse_args()
 DEBUG = args.debug
@@ -34,11 +34,11 @@ BATCH_SIZE = 1 #don't change it
 D_PROJ = 256
 
 if DEBUG:
-    BERT_MODEL = 'bert-base-cased'
+    BERT_MODEL = 'bert-base-uncased'
     pooling = Pooling(768, D_PROJ)
     EVALUATION_FREQUENCY = 1
 else:
-    BERT_MODEL = 'bert-large-cased'
+    BERT_MODEL = 'bert-large-uncased'
     pooling = Pooling(1024, D_PROJ)
     EVALUATION_FREQUENCY = 5
 
@@ -51,7 +51,7 @@ classifier.load_state_dict(torch.load(PATH_WEIGHTS_CLASSIFIER))
 print('number of parameters in pooling:', torch.nn.utils.parameters_to_vector(pooling.parameters()).shape[0])
 print('number of parameters in classifier:', torch.nn.utils.parameters_to_vector(classifier.parameters()).shape[0])
 
-tokenizer = BertTokenizer.from_pretrained(BERT_MODEL)
+tokenizer = BertTokenizer.from_pretrained(BERT_MODEL, do_lower_case=True)
 pad_token = tokenizer.tokenize("[PAD]")
 PAD_ID = tokenizer.convert_tokens_to_ids(pad_token)[0]
 

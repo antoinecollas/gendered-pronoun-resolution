@@ -34,12 +34,12 @@ classifier = MLP(3*D_PROJ, 3)
 classifier.train().to(DEVICE)
 
 if DEBUG:
-    BERT_MODEL = 'bert-base-cased'
+    BERT_MODEL = 'bert-base-uncased'
     pooling = Pooling(768, D_PROJ).train().to(DEVICE)
     BATCH_SIZE = 2
     EVALUATION_FREQUENCY = 1
 else:
-    BERT_MODEL = 'bert-large-cased'
+    BERT_MODEL = 'bert-large-uncased'
     pooling = Pooling(1024, D_PROJ).train().to(DEVICE)
     BATCH_SIZE = 32
     EVALUATION_FREQUENCY = 5
@@ -48,7 +48,7 @@ print('number of parameters in pooling:', torch.nn.utils.parameters_to_vector(po
 print('number of parameters in classifier:', torch.nn.utils.parameters_to_vector(classifier.parameters()).shape[0])
 
 # load pre-trained Bert tokenizer (vocabulary)
-tokenizer = BertTokenizer.from_pretrained(BERT_MODEL)
+tokenizer = BertTokenizer.from_pretrained(BERT_MODEL, do_lower_case=True)
 pad_token = tokenizer.tokenize("[PAD]")
 PAD_ID = tokenizer.convert_tokens_to_ids(pad_token)[0]
 
@@ -66,7 +66,7 @@ for epoch in tqdm(range(NB_EPOCHS)):
 
     for X, Y in data_training:
         tokens, Y, attention_mask, pos = preprocess_data(X, Y, tokenizer, DEVICE, PAD_ID)
-        
+
         with torch.no_grad():
             encoded_layers, _ = Bert(tokens, attention_mask=attention_mask) #list of [bs, max_len, 768]
         vect_wordpiece = get_vect_from_pos(encoded_layers[len(encoded_layers)-1], pos)
