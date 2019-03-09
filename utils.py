@@ -38,7 +38,7 @@ def compute_word_pos(raw_text, wordpiece, word, offset):
 
 	/!\ It assumes that every letters from the raw text are in word piece text.
 	'''
-	word_pos_start, wp_pos = 0, 0
+	word_pos_start, wp_pos = 1, 0
 	wp_ch = wordpiece[word_pos_start][wp_pos]
 	for i in range(offset):
 		raw_ch = raw_text[i].lower()
@@ -125,7 +125,7 @@ def preprocess_data(X, Y, tokenizer, device, pad_id):
 
 	tokens, pos = list(), list()
 	for row in X.itertuples(index=False):
-		tokenized_text = tokenizer.tokenize(row.Text)
+		tokenized_text = ['[CLS]'] + tokenizer.tokenize(row.Text) + ['[SEP]']
 		indexed_tokens = tokenizer.convert_tokens_to_ids(tokenized_text)
 		tokens.append(indexed_tokens)
 		pos_pronoun = compute_word_pos(row.Text, tokenized_text, row.Pronoun, row._3)
