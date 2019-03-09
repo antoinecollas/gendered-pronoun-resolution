@@ -1,114 +1,67 @@
-import csv, os, sys, torch, argparse
+import sys, torch
 from tqdm import tqdm
-from git import Repo
 from utils import DataLoader, compute_word_pos, pad, get_vect_from_pos, preprocess_data, print_tensorboard, log_loss
-from pytorch_pretrained_bert import BertTokenizer, BertModel
-from neural_nets import MLP, Pooling
-from tensorboardX import SummaryWriter
 import numpy as np
 
-parser = argparse.ArgumentParser(description='Training model for coreference.')
-parser.add_argument('--debug', help='Debug mode.', action='store_true')
-args = parser.parse_args()
-DEBUG = args.debug
-if DEBUG:
-    print('============ DEBUG ============')
+def train(tokenizer, bert, pooling, classifier, cfg, tensorboard_writer):
+    bert.eval()
 
-DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print('RUNNING ON', DEVICE)
-writer = SummaryWriter()
+    loss = torch.nn.CrossEntropyLoss()
+    loss_values, loss_values_eval, log_loss_values_eval = list(), list(), list()
+    optimizer = torch.optim.Adam(list(pooling.parameters()) + list(classifier.parameters()), lr = 0.0001)
 
-FOLDER_DATA = 'gap_coreference'
-if not os.path.exists(FOLDER_DATA):
-    Repo.clone_from('https://github.com/antoinecollas/gap-coreference', FOLDER_DATA)
-TRAINING_PATH = os.path.join(FOLDER_DATA, 'gap-test.tsv')
-VAL_PATH = os.path.join(FOLDER_DATA, 'gap-validation.tsv')
+    for epoch in tqdm(range(cfg.NB_EPOCHS)):
+        data_training = DataLoader(cfg.TRAINING_PATH, cfg.BATCH_SIZE, shuffle=True, debug=cfg.DEBUG)
+        pooling.train()
+        classifier.train()
 
-PATH_WEIGHTS_POOLING = 'weights_pooling'
-PATH_WEIGHTS_CLASSIFIER = 'weights_classifier'
+        for X, Y in data_training:
+            tokens, Y, attention_mask, pos = preprocess_data(X, Y, tokenizer, cfg.DEVICE, cfg.PAD_ID)
 
-NB_EPOCHS = 1000
-D_PROJ = 256
-
-classifier = MLP(3*D_PROJ, 3)
-classifier.train().to(DEVICE)
-
-if DEBUG:
-    BERT_MODEL = 'bert-base-uncased'
-    pooling = Pooling(768, D_PROJ).train().to(DEVICE)
-    BATCH_SIZE = 2
-    EVALUATION_FREQUENCY = 1
-else:
-    BERT_MODEL = 'bert-large-uncased'
-    pooling = Pooling(1024, D_PROJ).train().to(DEVICE)
-    BATCH_SIZE = 32
-    EVALUATION_FREQUENCY = 5
-
-print('number of parameters in pooling:', torch.nn.utils.parameters_to_vector(pooling.parameters()).shape[0])
-print('number of parameters in classifier:', torch.nn.utils.parameters_to_vector(classifier.parameters()).shape[0])
-
-# load pre-trained Bert tokenizer (vocabulary)
-tokenizer = BertTokenizer.from_pretrained(BERT_MODEL, do_lower_case=True)
-pad_token = tokenizer.tokenize("[PAD]")
-PAD_ID = tokenizer.convert_tokens_to_ids(pad_token)[0]
-
-# load pretrained Bert
-Bert = BertModel.from_pretrained(BERT_MODEL)
-Bert.eval().to(DEVICE)
-
-loss = torch.nn.CrossEntropyLoss()
-loss_values, loss_values_eval, log_loss_values_eval = list(), list(), list()
-optimizer = torch.optim.Adam(list(pooling.parameters()) + list(classifier.parameters()), lr = 0.0001)
-
-for epoch in tqdm(range(NB_EPOCHS)):
-    data_training = DataLoader(TRAINING_PATH, BATCH_SIZE, shuffle=True, debug=DEBUG)
-    classifier.train()
-
-    for X, Y in data_training:
-        tokens, Y, attention_mask, pos = preprocess_data(X, Y, tokenizer, DEVICE, PAD_ID)
-
-        with torch.no_grad():
-            encoded_layers, _ = Bert(tokens, attention_mask=attention_mask) #list of [bs, max_len, 768]
-        vect_wordpiece = get_vect_from_pos(encoded_layers[len(encoded_layers)-1], pos)
-        features = pooling(vect_wordpiece)
-        features = torch.cat(features, dim=1)
-
-        output = classifier(features)
-        
-        optimizer.zero_grad()
-        output = loss(output, Y)
-        loss_values.append(output.item())
-        output.backward()
-        torch.nn.utils.clip_grad_norm_(list(pooling.parameters()) + list(classifier.parameters()), max_norm=5, norm_type=2)
-        optimizer.step()
-
-    if epoch%EVALUATION_FREQUENCY == 0:
-        data_eval = DataLoader(VAL_PATH, BATCH_SIZE, shuffle=True, debug=DEBUG)
-        classifier.eval()
-        for X, Y in data_eval:
-            tokens, Y, attention_mask, pos = preprocess_data(X, Y, tokenizer, DEVICE, PAD_ID)
-            
             with torch.no_grad():
-                encoded_layers, _ = Bert(tokens, attention_mask=attention_mask) #list of [bs, max_len, 768]
+                encoded_layers, _ = bert(tokens, attention_mask=attention_mask) #list of [bs, max_len, 768]
             vect_wordpiece = get_vect_from_pos(encoded_layers[len(encoded_layers)-1], pos)
             features = pooling(vect_wordpiece)
             features = torch.cat(features, dim=1)
 
-            with torch.no_grad():
-                output = classifier(features)
+            output = classifier(features)
+            
+            optimizer.zero_grad()
+            output = loss(output, Y)
+            loss_values.append(output.item())
+            output.backward()
+            torch.nn.utils.clip_grad_norm_(list(pooling.parameters()) + list(classifier.parameters()), max_norm=5, norm_type=2)
+            optimizer.step()
 
-            loss_value = loss(output, Y)
-            loss_values_eval.append(loss_value.item())
-            log_loss_values_eval.append(log_loss(output, Y).item())
+        if epoch%cfg.EVALUATION_FREQUENCY == 0:
+            data_eval = DataLoader(cfg.VAL_PATH, cfg.BATCH_SIZE, shuffle=True, debug=cfg.DEBUG)
+            pooling.eval()
+            classifier.eval()
 
-        # the losses are not totally correct because it assumes that all batch have the same size whereas the last one is often smaller
-        scalars = {
-            'training/cross_entropy': np.mean(loss_values),
-            'training/gradient_norm': torch.norm(torch.nn.utils.parameters_to_vector(list(pooling.parameters()) + list(classifier.parameters())), p=2),
-            'eval/cross_entropy'  : np.mean(loss_values_eval),
-            'eval/log_loss'  : np.mean(log_loss_values_eval)
-        }
-        print_tensorboard(writer, scalars, epoch)
-        loss_values, loss_values_eval, log_loss_values_eval = list(), list(), list()
-        torch.save(pooling.state_dict(), PATH_WEIGHTS_POOLING)
-        torch.save(classifier.state_dict(), PATH_WEIGHTS_CLASSIFIER)
+            for X, Y in data_eval:
+                tokens, Y, attention_mask, pos = preprocess_data(X, Y, tokenizer, cfg.DEVICE, cfg.PAD_ID)
+                
+                with torch.no_grad():
+                    encoded_layers, _ = bert(tokens, attention_mask=attention_mask) #list of [bs, max_len, 768]
+                vect_wordpiece = get_vect_from_pos(encoded_layers[len(encoded_layers)-1], pos)
+                features = pooling(vect_wordpiece)
+                features = torch.cat(features, dim=1)
+
+                with torch.no_grad():
+                    output = classifier(features)
+
+                loss_value = loss(output, Y)
+                loss_values_eval.append(loss_value.item())
+                log_loss_values_eval.append(log_loss(output, Y).item())
+
+            # the losses are not totally correct because it assumes that all batch have the same size whereas the last one is often smaller
+            scalars = {
+                'training/cross_entropy': np.mean(loss_values),
+                'training/gradient_norm': torch.norm(torch.nn.utils.parameters_to_vector(list(pooling.parameters()) + list(classifier.parameters())), p=2),
+                'eval/cross_entropy'  : np.mean(loss_values_eval),
+                'eval/log_loss'  : np.mean(log_loss_values_eval)
+            }
+            print_tensorboard(tensorboard_writer, scalars, epoch)
+            loss_values, loss_values_eval, log_loss_values_eval = list(), list(), list()
+            torch.save(pooling.state_dict(), cfg.PATH_WEIGHTS_POOLING)
+            torch.save(classifier.state_dict(), cfg.PATH_WEIGHTS_CLASSIFIER)
