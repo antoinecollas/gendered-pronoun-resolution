@@ -4,9 +4,9 @@ conda env update -f=environment_gpu.yml
 
 conda activate coref
 
-python train.py
+python main.py --train
 
-python test.py
+python main.py --test
 
 cd gap_coreference
 
