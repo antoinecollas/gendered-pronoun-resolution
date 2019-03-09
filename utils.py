@@ -152,4 +152,4 @@ def log_loss(p_pred, Y_true):
 	y_onehot.scatter_(1, Y_true, 1)
 	log_loss_value = log_p*y_onehot
 	log_loss_value = - torch.sum(log_loss_value) / p_pred.shape[0]
-	return log_loss_value
+	return log_loss_value.item()

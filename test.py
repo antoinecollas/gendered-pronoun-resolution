@@ -8,10 +8,8 @@ def test(tokenizer, bert, pooling, classifier, cfg):
     pooling.eval()
     classifier.eval()
 
-    loss = torch.nn.CrossEntropyLoss()
-    loss_values, predictions = list(), list()
+    predictions = list()
 
-    # data_test = DataLoader(TEST_PATH, BATCH_SIZE, shuffle=False, debug=False)
     data_test = DataLoader(cfg.TEST_PATH, cfg.BATCH_SIZE, shuffle=False, debug=cfg.DEBUG)
 
     for X, Y in tqdm(data_test):
@@ -25,11 +23,7 @@ def test(tokenizer, bert, pooling, classifier, cfg):
 
             output = classifier(features)
 
-            loss_value = loss(output, Y)
-            loss_values.append(loss_value.item())
             predictions.append(np.array([X.iloc[0]['ID'], output[0][0].item(), output[0][1].item(), output[0][2].item()]))
-
-    print('Loss (cross entropy) on development set:', np.mean(loss_values))
 
     with open(cfg.TEST_PRED_GAP_SCORER_PATH, 'w', encoding='utf8', newline='') as tsv_file:
         tsv_writer = csv.writer(tsv_file, delimiter='\t', lineterminator='\n')
