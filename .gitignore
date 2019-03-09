@@ -4,3 +4,5 @@ __pycache__/
 papers/
 gap-coreference/
 runs/
+weights_*
+gap-pred*
