@@ -19,7 +19,7 @@ class Pooling(nn.Module):
         
         weights_pronoun, weights_A, weights_B = list(), list(), list()
         for i in range(len(pronoun)):
-            weights_pronoun.append(self.att_pronoun(pronoun[i]).reshape(-1))
+            weights_pronoun.append(softmax(self.att_pronoun(pronoun[i]).reshape(-1), dim=0))
             weights_A.append(softmax(self.att_other(A[i]).reshape(-1), dim=0))
             weights_B.append(softmax(self.att_other(B[i]).reshape(-1), dim=0))
         
