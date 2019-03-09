@@ -32,7 +32,7 @@ def train(tokenizer, bert, pooling, classifier, cfg, tensorboard_writer):
             output = loss(output, Y)
             loss_values.append(output.item())
             output.backward()
-            torch.nn.utils.clip_grad_norm_(list(pooling.parameters()) + list(classifier.parameters()), max_norm=5, norm_type=2)
+            # torch.nn.utils.clip_grad_norm_(list(pooling.parameters()) + list(classifier.parameters()), max_norm=5, norm_type=2)
             optimizer.step()
 
         output_values = torch.cat(output_values)
@@ -46,7 +46,7 @@ def train(tokenizer, bert, pooling, classifier, cfg, tensorboard_writer):
             output_values, Y_values = list(), list()
             for X, Y in data_eval:
                 tokens, Y, attention_mask, pos = preprocess_data(X, Y, tokenizer, cfg.DEVICE, cfg.PAD_ID)
-                
+
                 with torch.no_grad():
                     encoded_layer, _ = bert(tokens, attention_mask=attention_mask, output_all_encoded_layers=False) #list of [bs, max_len, 768]
                     vect_wordpiece = get_vect_from_pos(encoded_layer, pos)
