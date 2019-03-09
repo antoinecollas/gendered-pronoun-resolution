@@ -44,7 +44,7 @@ class MLP(nn.Module):
             nn.Tanh(), 
             nn.BatchNorm1d(d_hid), 
             nn.Dropout(dropout),
-            nn.Linear(d_hid, d_hid), nn.Tanh(),
+            nn.Linear(d_hid, d_hid),
             nn.Tanh(),
             nn.BatchNorm1d(d_hid),
             nn.Dropout(dropout),
