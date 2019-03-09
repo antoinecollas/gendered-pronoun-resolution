@@ -49,11 +49,9 @@ def train(tokenizer, bert, pooling, classifier, cfg, tensorboard_writer):
                 
                 with torch.no_grad():
                     encoded_layer, _ = bert(tokens, attention_mask=attention_mask, output_all_encoded_layers=False) #list of [bs, max_len, 768]
-                vect_wordpiece = get_vect_from_pos(encoded_layer, pos)
-                features = pooling(vect_wordpiece)
-                features = torch.cat(features, dim=1)
-
-                with torch.no_grad():
+                    vect_wordpiece = get_vect_from_pos(encoded_layer, pos)
+                    features = pooling(vect_wordpiece)
+                    features = torch.cat(features, dim=1)
                     output = classifier(features)
                 
                 output_values.append(output)
