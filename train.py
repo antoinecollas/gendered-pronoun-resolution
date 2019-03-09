@@ -48,8 +48,8 @@ def train(tokenizer, bert, pooling, classifier, cfg, tensorboard_writer):
                 tokens, Y, attention_mask, pos = preprocess_data(X, Y, tokenizer, cfg.DEVICE, cfg.PAD_ID)
                 
                 with torch.no_grad():
-                    encoded_layers, _ = bert(tokens, attention_mask=attention_mask) #list of [bs, max_len, 768]
-                vect_wordpiece = get_vect_from_pos(encoded_layers[len(encoded_layers)-1], pos)
+                    encoded_layer, _ = bert(tokens, attention_mask=attention_mask, output_all_encoded_layers=False) #list of [bs, max_len, 768]
+                vect_wordpiece = get_vect_from_pos(encoded_layer, pos)
                 features = pooling(vect_wordpiece)
                 features = torch.cat(features, dim=1)
 
