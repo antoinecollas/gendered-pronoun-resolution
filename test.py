@@ -8,7 +8,7 @@ def test(tokenizer, bert, pooling, classifier, cfg):
     bert.eval()
     pooling.eval()
     classifier.eval()
-    softmax = nn.Softmax()
+    softmax = nn.Softmax(dim=1)
 
     predictions = list()
 
