@@ -6,7 +6,6 @@ def train(tokenizer, bert, pooling, classifier, cfg, tensorboard_writer):
     bert.eval()
 
     loss = torch.nn.CrossEntropyLoss()
-    loss_values, loss_values_eval, log_loss_values_eval = list(), list(), list()
     optimizer = torch.optim.Adam(list(pooling.parameters()) + list(classifier.parameters()), lr = 0.0001)
 
     for epoch in tqdm(range(cfg.NB_EPOCHS)):
@@ -30,7 +29,6 @@ def train(tokenizer, bert, pooling, classifier, cfg, tensorboard_writer):
             
             optimizer.zero_grad()
             output = loss(output, Y)
-            loss_values.append(output.item())
             output.backward()
             # torch.nn.utils.clip_grad_norm_(list(pooling.parameters()) + list(classifier.parameters()), max_norm=5, norm_type=2)
             optimizer.step()

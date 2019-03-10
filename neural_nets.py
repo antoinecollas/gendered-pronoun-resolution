@@ -49,7 +49,6 @@ class MLP(nn.Module):
             nn.BatchNorm1d(d_hid),
             nn.Dropout(dropout),
             nn.Linear(d_hid, out_features),
-            nn.Softmax(dim=1),
         )
 
     def forward(self, x):

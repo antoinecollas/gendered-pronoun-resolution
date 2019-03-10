@@ -54,12 +54,11 @@ if cfg.DEBUG:
     cfg.BERT_MODEL = 'bert-base-uncased'
     pooling = Pooling(768, cfg.D_PROJ).to(cfg.DEVICE)
     cfg.BATCH_SIZE = 2
-    cfg.EVALUATION_FREQUENCY = 1
 else:
     cfg.BERT_MODEL = 'bert-large-uncased'
     pooling = Pooling(1024, cfg.D_PROJ).to(cfg.DEVICE)
     cfg.BATCH_SIZE = 32
-    cfg.EVALUATION_FREQUENCY = 5
+cfg.EVALUATION_FREQUENCY = 1
 
 print('number of parameters in pooling:', torch.nn.utils.parameters_to_vector(pooling.parameters()).shape[0])
 print('number of parameters in classifier:', torch.nn.utils.parameters_to_vector(classifier.parameters()).shape[0])

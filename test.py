@@ -2,11 +2,13 @@ import sys, torch, csv
 from tqdm import tqdm
 from utils import DataLoader, compute_word_pos, pad, get_vect_from_pos, preprocess_data, print_tensorboard, log_loss
 import numpy as np
+import torch.nn as nn
 
 def test(tokenizer, bert, pooling, classifier, cfg):
     bert.eval()
     pooling.eval()
     classifier.eval()
+    softmax = nn.Softmax()
 
     predictions = list()
 
@@ -22,6 +24,7 @@ def test(tokenizer, bert, pooling, classifier, cfg):
             features = torch.cat(features, dim=1)
 
             output = classifier(features)
+            output = softmax(output)
 
             predictions.append(np.array([X.iloc[0]['ID'], output[0][0].item(), output[0][1].item(), output[0][2].item()]))
 
