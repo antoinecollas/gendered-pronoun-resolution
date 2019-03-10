@@ -145,14 +145,3 @@ def preprocess_data(X, Y, tokenizer, device, pad_id):
 def print_tensorboard(writer, scalars, epoch):
 	for key, value in scalars.items():
 		writer.add_scalar(key, value, epoch)
-
-def log_loss(logits, Y_true):
-	softmax = nn.Softmax(dim=1)
-	p_pred = softmax(logits)
-	log_p = torch.log(torch.max(torch.min(p_pred, p_pred.new_ones(p_pred.shape)*(1-10**(-15))), p_pred.new_ones(p_pred.shape)*10**(-15)))
-	Y_true = Y_true.unsqueeze(1)
-	y_onehot = log_p.new_zeros(log_p.shape)
-	y_onehot.scatter_(1, Y_true, 1)
-	log_loss_value = log_p*y_onehot
-	log_loss_value = - torch.sum(log_loss_value) / p_pred.shape[0]
-	return log_loss_value.item()

@@ -1,6 +1,6 @@
 import sys, torch
 from tqdm import tqdm
-from utils import DataLoader, compute_word_pos, pad, get_vect_from_pos, preprocess_data, print_tensorboard, log_loss
+from utils import DataLoader, compute_word_pos, pad, get_vect_from_pos, preprocess_data, print_tensorboard
 
 def train(tokenizer, bert, pooling, classifier, cfg, tensorboard_writer):
     bert.eval()
@@ -58,13 +58,11 @@ def train(tokenizer, bert, pooling, classifier, cfg, tensorboard_writer):
             output_values = torch.cat(output_values)
             Y_values = torch.cat(Y_values)
             loss_value_eval = loss(output_values, Y_values)
-            log_loss_value_eval = log_loss(output_values, Y_values)
 
             scalars = {
                 'training/cross_entropy': loss_value,
                 'training/gradient_norm': torch.norm(torch.nn.utils.parameters_to_vector(list(pooling.parameters()) + list(classifier.parameters())), p=2),
                 'eval/cross_entropy'  : loss_value_eval,
-                'eval/log_loss'  : log_loss_value_eval
             }
             print_tensorboard(tensorboard_writer, scalars, epoch)
             torch.save(pooling.state_dict(), cfg.PATH_WEIGHTS_POOLING)

@@ -1,6 +1,6 @@
 import sys, torch, csv
 from tqdm import tqdm
-from utils import DataLoader, compute_word_pos, pad, get_vect_from_pos, preprocess_data, print_tensorboard, log_loss
+from utils import DataLoader, compute_word_pos, pad, get_vect_from_pos, preprocess_data, print_tensorboard
 import numpy as np
 import torch.nn as nn
 
