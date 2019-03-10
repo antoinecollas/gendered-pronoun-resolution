@@ -147,7 +147,7 @@ def print_tensorboard(writer, scalars, epoch):
 		writer.add_scalar(key, value, epoch)
 
 def log_loss(p_pred, Y_true):
-	log_softmax = nn.LogSoftmax()
+	log_softmax = nn.LogSoftmax(dim=1)
 	log_p = log_softmax(torch.max(torch.min(p_pred, p_pred.new_ones(p_pred.shape)*(1-10**(-15))), p_pred.new_ones(p_pred.shape)*10**(-15)))
 	Y_true = Y_true.unsqueeze(1)
 	y_onehot = log_p.new_zeros(log_p.shape)
