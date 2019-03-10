@@ -44,7 +44,7 @@ if not os.path.exists(FOLDER_RESULTS):
 cfg.TEST_PRED_GAP_SCORER_PATH = os.path.join(FOLDER_RESULTS, 'gap-pred-scorer-development.tsv')
 cfg.TEST_PRED_KAGGLE_PATH = os.path.join(FOLDER_RESULTS, 'gap-pred-kaggle-development.csv')
 
-cfg.NB_EPOCHS = 1000
+cfg.NB_EPOCHS = 20
 cfg.D_PROJ = 256
 
 classifier = MLP(3*cfg.D_PROJ, 3)
