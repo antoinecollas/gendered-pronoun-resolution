@@ -7,8 +7,8 @@ class Pooling(nn.Module):
         super(Pooling, self).__init__()
         self.proj_pronoun = nn.Linear(in_features, d_proj)
         self.proj_other = nn.Linear(in_features, d_proj)
-        self.att_pronoun = nn.Linear(d_proj, 1)
-        self.att_other = nn.Linear(d_proj, 1)
+        self.att_pronoun = nn.Linear(d_proj, 1, bias=False)
+        self.att_other = nn.Linear(d_proj, 1, bias=False)
 
     def forward(self, x):
         pronoun, A, B = x
@@ -25,6 +25,8 @@ class Pooling(nn.Module):
         
         for i in range(len(pronoun)):
             pronoun[i] = torch.sum(pronoun[i]*weights_pronoun[i].unsqueeze(1), dim=0)
+            # print(A[i].shape)
+            # print(weights_A[i].unsqueeze(1).shape)
             A[i] = torch.sum(A[i]*weights_A[i].unsqueeze(1), dim=0)
             B[i] = torch.sum(B[i]*weights_B[i].unsqueeze(1), dim=0)
 

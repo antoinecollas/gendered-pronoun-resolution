@@ -96,24 +96,27 @@ def pad(tokens, pad_id):
 	
 	return tokens
 
-def get_vect_from_pos(encoded_layer, pos):
+def get_vect_from_pos(encoded_layers, pos):
 	'''
-	encoded_layer: Tensor: encoded layer of shape [bs, max_len, hidden_size]
+	encoded_layers: Tensor of shape [bs, nb_layers, max_len, hidden_size]
 	pos: Tensor: positions of pronoun, A, B. Shape: [bs, 3, 2]
 	'''
-	def get_vect(encoded_layer, pos):
+	def get_vect(encoded_layers, pos):
 		vect = list()
 		for i in range(pos.shape[0]):
-			vect.append(encoded_layer.new_zeros(pos[i,1]-pos[i,0]+1, encoded_layer.shape[2]))
-			vect[len(vect)-1] = encoded_layer[i, pos[i,0]:pos[i,1]]
+			vect.append(encoded_layers.new_zeros(encoded_layers.shape[1], pos[i,1]-pos[i,0]+1, encoded_layers.shape[3]))
+			vect[len(vect)-1] = encoded_layers[i, :, pos[i,0]:pos[i,1], :]
+			vect[len(vect)-1] = vect[len(vect)-1].reshape([vect[len(vect)-1].shape[0]*vect[len(vect)-1].shape[1], vect[len(vect)-1].shape[2]])
 		return vect
 	
 	pos_pronouns = pos[:,0,:]
-	vect_pronoun = get_vect(encoded_layer, pos_pronouns)
+	vect_pronoun = get_vect(encoded_layers, pos_pronouns)
+
 	pos_A = pos[:,1,:]
-	vect_A = get_vect(encoded_layer, pos_A)
+	vect_A = get_vect(encoded_layers, pos_A)
+
 	pos_B = pos[:,2,:]
-	vect_B = get_vect(encoded_layer, pos_B)
+	vect_B = get_vect(encoded_layers, pos_B)
 
 	return [vect_pronoun, vect_A, vect_B]
 
