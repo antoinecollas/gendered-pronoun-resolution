@@ -13,14 +13,14 @@ def train(model, cfg, tensorboard_writer):
 
         for X, Y in data_training:
             Y = Y.to(cfg.DEVICE)
-            output = model(X)
-            output_values.append(output)
-            Y_values.append(Y)
+            output_model = model(X)
             optimizer.zero_grad()
-            output = loss(output, Y)
+            output = loss(output_model, Y)
             output.backward()
-            # torch.nn.utils.clip_grad_norm_(list(pooling.parameters()) + list(classifier.parameters()), max_norm=5, norm_type=2)
             optimizer.step()
+
+            output_values.append(output_model.detach_())
+            Y_values.append(Y)
 
         output_values = torch.cat(output_values)
         Y_values = torch.cat(Y_values)
@@ -34,7 +34,7 @@ def train(model, cfg, tensorboard_writer):
             for X, Y in data_eval:
                 Y = Y.to(cfg.DEVICE)
                 output = model(X)
-                output_values.append(output)
+                output_values.append(output.detach_())
                 Y_values.append(Y)
 
             output_values = torch.cat(output_values)
