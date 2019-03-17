@@ -36,9 +36,10 @@ class Pooling(nn.Module):
         
         return pronoun, A, B
 
-class MLP(nn.Module):
-    def __init__(self, in_features, out_features, dropout=0.2, d_hid = 512):
-        super(MLP, self).__init__()
+class Scorer(nn.Module):
+    def __init__(self, d_proj, dropout=0.2, d_hid = 512):
+        super(Scorer, self).__init__()
+        in_features = 2*d_proj
         self.mlp = nn.Sequential(
             nn.BatchNorm1d(in_features), 
             nn.Dropout(dropout),
@@ -50,12 +51,16 @@ class MLP(nn.Module):
             nn.ReLU(),
             nn.BatchNorm1d(d_hid),
             nn.Dropout(dropout),
-            nn.Linear(d_hid, out_features),
+            nn.Linear(d_hid, 1),
         )
 
-    def forward(self, x):
-        x = self.mlp(x)
-        return x
+    def forward(self, features):
+        features_A = torch.cat([features[0], features[1]], dim=1)
+        score_A = self.mlp(features_A)
+        features_B = torch.cat([features[0], features[2]], dim=1)
+        score_B = self.mlp(features_B)
+        score_eps = features[0].new_zeros(score_A.shape)
+        return torch.cat([score_eps, score_A, score_B], dim=1)
 
 class Model():
     def __init__(self, cfg):
@@ -70,7 +75,7 @@ class Model():
         self.PAD_ID = self.tokenizer.convert_tokens_to_ids(pad_token)[0]
         self.bert = BertModel.from_pretrained(BERT_MODEL)
         self.bert.to(cfg.DEVICE).eval()
-        self.scorer = MLP(2*cfg.D_PROJ, 1)
+        self.scorer = Scorer(cfg.D_PROJ)
         self.scorer.to(cfg.DEVICE)
         self.DEVICE = cfg.DEVICE
         self.PATH_WEIGHTS_POOLING = cfg.PATH_WEIGHTS_POOLING
@@ -83,12 +88,8 @@ class Model():
             encoded_layers = torch.stack(encoded_layers, dim=1)
         vect_wordpiece = get_vect_from_pos(encoded_layers, pos)
         features = self.pooling(vect_wordpiece)
-        features_A = torch.cat([features[0], features[1]], dim=1)
-        score_A = self.scorer(features_A)
-        features_B = torch.cat([features[0], features[2]], dim=1)
-        score_B = self.scorer(features_A)
-        score_eps = torch.zeros(score_A.shape).to(self.DEVICE)
-        return torch.cat([score_eps, score_A, score_B], dim=1).to(self.DEVICE)
+        scores = self.scorer(features)
+        return scores
 
     def parameters(self):
         return list(self.pooling.parameters()) + list(self.scorer.parameters())
