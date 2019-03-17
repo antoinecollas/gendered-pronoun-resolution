@@ -1,7 +1,6 @@
 import os, sys, torch, argparse
 from git import Repo
-from pytorch_pretrained_bert import BertTokenizer, BertModel
-from neural_nets import MLP, Pooling
+from neural_nets import Model
 from tensorboardX import SummaryWriter
 from train import train
 from test import test
@@ -46,36 +45,17 @@ cfg.TEST_PRED_KAGGLE_PATH = os.path.join(FOLDER_RESULTS, 'gap-pred-kaggle-develo
 
 cfg.NB_EPOCHS = 20
 cfg.D_PROJ = 256
-
-classifier = MLP(3*cfg.D_PROJ, 3)
-classifier.to(cfg.DEVICE)
-
-if cfg.DEBUG:
-    cfg.BERT_MODEL = 'bert-base-uncased'
-    pooling = Pooling(768, cfg.D_PROJ).to(cfg.DEVICE)
-    cfg.BATCH_SIZE = 2
-else:
-    cfg.BERT_MODEL = 'bert-large-uncased'
-    pooling = Pooling(1024, cfg.D_PROJ).to(cfg.DEVICE)
-    cfg.BATCH_SIZE = 32
+cfg.BATCH_SIZE = 32 if cfg.DEBUG else 2
 cfg.EVALUATION_FREQUENCY = 1
 
-print('number of parameters in pooling:', torch.nn.utils.parameters_to_vector(pooling.parameters()).shape[0])
-print('number of parameters in classifier:', torch.nn.utils.parameters_to_vector(classifier.parameters()).shape[0])
+model = Model(cfg)
 
-# load pre-trained bert tokenizer (vocabulary)
-tokenizer = BertTokenizer.from_pretrained(cfg.BERT_MODEL, do_lower_case=True)
-pad_token = tokenizer.tokenize("[PAD]")
-cfg.PAD_ID = tokenizer.convert_tokens_to_ids(pad_token)[0]
-
-# load pretrained bert
-bert = BertModel.from_pretrained(cfg.BERT_MODEL)
-bert.to(cfg.DEVICE)
+print('number of parameters in pooling:', torch.nn.utils.parameters_to_vector(model.pooling.parameters()).shape[0])
+print('number of parameters in classifier:', torch.nn.utils.parameters_to_vector(model.classifier.parameters()).shape[0])
 
 if cfg.TRAIN:
-    train(tokenizer, bert, pooling, classifier, cfg, writer)
+    train(model, cfg, writer)
 elif cfg.TEST:
     cfg.BATCH_SIZE = 1
-    pooling.load_state_dict(torch.load(cfg.PATH_WEIGHTS_POOLING))
-    classifier.load_state_dict(torch.load(cfg.PATH_WEIGHTS_CLASSIFIER))
-    test(tokenizer, bert, pooling, classifier, cfg)
+    model.load_parameters()
+    test(model, cfg)

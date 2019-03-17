@@ -1,6 +1,8 @@
 import torch, sys
 import torch.nn as nn
 from torch.nn.functional import softmax
+from pytorch_pretrained_bert import BertTokenizer, BertModel
+from utils import preprocess_data, get_vect_from_pos
 
 class Pooling(nn.Module):
     def __init__(self, in_features, d_proj=256):
@@ -25,8 +27,6 @@ class Pooling(nn.Module):
         
         for i in range(len(pronoun)):
             pronoun[i] = torch.sum(pronoun[i]*weights_pronoun[i].unsqueeze(1), dim=0)
-            # print(A[i].shape)
-            # print(weights_A[i].unsqueeze(1).shape)
             A[i] = torch.sum(A[i]*weights_A[i].unsqueeze(1), dim=0)
             B[i] = torch.sum(B[i]*weights_B[i].unsqueeze(1), dim=0)
 
@@ -56,3 +56,52 @@ class MLP(nn.Module):
     def forward(self, x):
         x = self.mlp(x)
         return x
+
+class Model():
+    def __init__(self, cfg):
+        if cfg.DEBUG:
+            BERT_MODEL = 'bert-base-uncased'
+            self.pooling = Pooling(768, cfg.D_PROJ).to(cfg.DEVICE)
+        else:
+            BERT_MODEL = 'bert-large-uncased'
+            self.pooling = Pooling(1024, cfg.D_PROJ).to(cfg.DEVICE)
+        self.tokenizer = BertTokenizer.from_pretrained(BERT_MODEL, do_lower_case=True)
+        pad_token = self.tokenizer.tokenize("[PAD]")
+        self.PAD_ID = self.tokenizer.convert_tokens_to_ids(pad_token)[0]
+        self.bert = BertModel.from_pretrained(BERT_MODEL)
+        self.bert.to(cfg.DEVICE).eval()
+        self.classifier = MLP(3*cfg.D_PROJ, 3)
+        self.classifier.to(cfg.DEVICE)
+        self.DEVICE = cfg.DEVICE
+        self.PATH_WEIGHTS_POOLING = cfg.PATH_WEIGHTS_POOLING
+        self.PATH_WEIGHTS_CLASSIFIER = cfg.PATH_WEIGHTS_CLASSIFIER
+
+    def __call__(self, X):
+        tokens, attention_mask, pos = preprocess_data(X, self.tokenizer, self.DEVICE, self.PAD_ID)
+        with torch.no_grad():
+            encoded_layers, _ = self.bert(tokens, attention_mask=attention_mask, output_all_encoded_layers=True)
+            encoded_layers = torch.stack(encoded_layers, dim=1)
+        vect_wordpiece = get_vect_from_pos(encoded_layers, pos)
+        features = self.pooling(vect_wordpiece)
+        features = torch.cat(features, dim=1)
+        output = self.classifier(features)
+        return output
+
+    def parameters(self):
+        return list(self.pooling.parameters()) + list(self.classifier.parameters())
+
+    def save_parameters(self):
+        torch.save(self.pooling.state_dict(), self.PATH_WEIGHTS_POOLING)
+        torch.save(self.classifier.state_dict(), self.PATH_WEIGHTS_CLASSIFIER)
+
+    def load_parameters(self):
+        self.pooling.load_state_dict(torch.load(self.PATH_WEIGHTS_POOLING))
+        self.classifier.load_state_dict(torch.load(self.PATH_WEIGHTS_CLASSIFIER))
+
+    def train(self):
+        self.pooling.train()
+        self.classifier.train()
+
+    def eval(self):
+        self.pooling.eval()
+        self.classifier.eval()

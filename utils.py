@@ -31,6 +31,11 @@ class DataLoader():
 		indices = self.order[temp:self.current_idx]
 		X =  self.data[['ID', 'Text', 'Pronoun', 'Pronoun-offset', 'A', 'A-offset', 'B', 'B-offset']].iloc[indices]
 		Y =  self.data[['A-coref', 'B-coref']].iloc[indices]
+		temp = torch.Tensor(Y.values.astype(int))
+		Y = torch.zeros((Y.shape[0], Y.shape[1]+1)) 
+		Y[:,0:2] = temp
+		Y[:,2] = 1 - Y.sum(dim=1)
+		Y = torch.argmax(Y, dim=1)
 		return X, Y
 
 def compute_word_pos(raw_text, wordpiece, word, offset):
@@ -120,13 +125,7 @@ def get_vect_from_pos(encoded_layers, pos):
 
 	return [vect_pronoun, vect_A, vect_B]
 
-def preprocess_data(X, Y, tokenizer, device, pad_id):
-	temp = torch.Tensor(Y.values.astype(int))
-	Y = torch.zeros((Y.shape[0], Y.shape[1]+1)) 
-	Y[:,0:2] = temp
-	Y[:,2] = 1 - Y.sum(dim=1)
-	Y = torch.argmax(Y, dim=1).to(device)
-
+def preprocess_data(X, tokenizer, device, pad_id):
 	tokens, pos = list(), list()
 	for row in X.itertuples(index=False):
 		tokenized_text = ['[CLS]'] + tokenizer.tokenize(row.Text) + ['[SEP]']
@@ -143,7 +142,7 @@ def preprocess_data(X, Y, tokenizer, device, pad_id):
 	attention_mask = torch.ones(tokens.shape).to(device)
 	attention_mask[tokens==pad_id] = 0
 
-	return [tokens, Y, attention_mask, pos]
+	return [tokens, attention_mask, pos]
 
 def print_tensorboard(writer, scalars, epoch):
 	for key, value in scalars.items():

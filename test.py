@@ -4,30 +4,16 @@ from utils import DataLoader, compute_word_pos, pad, get_vect_from_pos, preproce
 import numpy as np
 import torch.nn as nn
 
-def test(tokenizer, bert, pooling, classifier, cfg):
-    bert.eval()
-    pooling.eval()
-    classifier.eval()
+def test(model, cfg):
+    model.eval()
     softmax = nn.Softmax(dim=1)
-
     predictions = list()
-
     data_test = DataLoader(cfg.TEST_PATH, cfg.BATCH_SIZE, shuffle=False, debug=cfg.DEBUG)
 
     for X, Y in tqdm(data_test):
-        tokens, Y, attention_mask, pos = preprocess_data(X, Y, tokenizer, cfg.DEVICE, cfg.PAD_ID)
-
-        with torch.no_grad():
-            encoded_layers, _ = bert(tokens, attention_mask=attention_mask, output_all_encoded_layers=True)
-            encoded_layers = torch.stack(encoded_layers, dim=1)
-            vect_wordpiece = get_vect_from_pos(encoded_layers, pos)
-            features = pooling(vect_wordpiece)
-            features = torch.cat(features, dim=1)
-
-            output = classifier(features)
-            output = softmax(output)
-
-            predictions.append(np.array([X.iloc[0]['ID'], output[0][0].item(), output[0][1].item(), output[0][2].item()]))
+        output = model(X)
+        output = softmax(output)
+        predictions.append(np.array([X.iloc[0]['ID'], output[0][0].item(), output[0][1].item(), output[0][2].item()]))
 
     with open(cfg.TEST_PRED_GAP_SCORER_PATH, 'w', encoding='utf8', newline='') as tsv_file:
         tsv_writer = csv.writer(tsv_file, delimiter='\t', lineterminator='\n')
