@@ -45,7 +45,7 @@ cfg.TEST_PRED_KAGGLE_PATH = os.path.join(FOLDER_RESULTS, 'gap-pred-kaggle-develo
 
 cfg.NB_EPOCHS = 20
 cfg.D_PROJ = 256
-cfg.BATCH_SIZE = 32 if cfg.DEBUG else 2
+cfg.BATCH_SIZE = 2 if cfg.DEBUG else 32
 cfg.EVALUATION_FREQUENCY = 1
 
 model = Model(cfg)
