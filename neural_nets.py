@@ -87,7 +87,7 @@ class Model():
         score_A = self.scorer(features_A)
         features_B = torch.cat([features[0], features[2]], dim=1)
         score_B = self.scorer(features_A)
-        score_eps = torch.zeros(score_A.shape)
+        score_eps = torch.zeros(score_A.shape).to(self.DEVICE)
         return torch.cat([score_eps, score_A, score_B], dim=1).to(self.DEVICE)
 
     def parameters(self):
