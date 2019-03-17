@@ -43,11 +43,11 @@ class MLP(nn.Module):
             nn.BatchNorm1d(in_features), 
             nn.Dropout(dropout),
             nn.Linear(in_features, d_hid),
-            nn.Tanh(), 
+            nn.ReLU(), 
             nn.BatchNorm1d(d_hid), 
             nn.Dropout(dropout),
             nn.Linear(d_hid, d_hid),
-            nn.Tanh(),
+            nn.ReLU(),
             nn.BatchNorm1d(d_hid),
             nn.Dropout(dropout),
             nn.Linear(d_hid, out_features),
@@ -70,8 +70,8 @@ class Model():
         self.PAD_ID = self.tokenizer.convert_tokens_to_ids(pad_token)[0]
         self.bert = BertModel.from_pretrained(BERT_MODEL)
         self.bert.to(cfg.DEVICE).eval()
-        self.classifier = MLP(3*cfg.D_PROJ, 3)
-        self.classifier.to(cfg.DEVICE)
+        self.scorer = MLP(2*cfg.D_PROJ, 1)
+        self.scorer.to(cfg.DEVICE)
         self.DEVICE = cfg.DEVICE
         self.PATH_WEIGHTS_POOLING = cfg.PATH_WEIGHTS_POOLING
         self.PATH_WEIGHTS_CLASSIFIER = cfg.PATH_WEIGHTS_CLASSIFIER
@@ -83,25 +83,28 @@ class Model():
             encoded_layers = torch.stack(encoded_layers, dim=1)
         vect_wordpiece = get_vect_from_pos(encoded_layers, pos)
         features = self.pooling(vect_wordpiece)
-        features = torch.cat(features, dim=1)
-        output = self.classifier(features)
-        return output
+        features_A = torch.cat([features[0], features[1]], dim=1)
+        score_A = self.scorer(features_A)
+        features_B = torch.cat([features[0], features[2]], dim=1)
+        score_B = self.scorer(features_A)
+        score_eps = torch.zeros(score_A.shape)
+        return torch.cat([score_eps, score_A, score_B], dim=1).to(self.DEVICE)
 
     def parameters(self):
-        return list(self.pooling.parameters()) + list(self.classifier.parameters())
+        return list(self.pooling.parameters()) + list(self.scorer.parameters())
 
     def save_parameters(self):
         torch.save(self.pooling.state_dict(), self.PATH_WEIGHTS_POOLING)
-        torch.save(self.classifier.state_dict(), self.PATH_WEIGHTS_CLASSIFIER)
+        torch.save(self.scorer.state_dict(), self.PATH_WEIGHTS_CLASSIFIER)
 
     def load_parameters(self):
         self.pooling.load_state_dict(torch.load(self.PATH_WEIGHTS_POOLING))
-        self.classifier.load_state_dict(torch.load(self.PATH_WEIGHTS_CLASSIFIER))
+        self.scorer.load_state_dict(torch.load(self.PATH_WEIGHTS_CLASSIFIER))
 
     def train(self):
         self.pooling.train()
-        self.classifier.train()
+        self.scorer.train()
 
     def eval(self):
         self.pooling.eval()
-        self.classifier.eval()
+        self.scorer.eval()

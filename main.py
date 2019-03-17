@@ -51,7 +51,7 @@ cfg.EVALUATION_FREQUENCY = 1
 model = Model(cfg)
 
 print('number of parameters in pooling:', torch.nn.utils.parameters_to_vector(model.pooling.parameters()).shape[0])
-print('number of parameters in classifier:', torch.nn.utils.parameters_to_vector(model.classifier.parameters()).shape[0])
+print('number of parameters in scorer:', torch.nn.utils.parameters_to_vector(model.scorer.parameters()).shape[0])
 
 if cfg.TRAIN:
     train(model, cfg, writer)
