@@ -11,6 +11,7 @@ def test(model, cfg):
     data_test = DataLoader(cfg.TEST_PATH, cfg.BATCH_SIZE, shuffle=False, debug=cfg.DEBUG)
 
     for X, Y in tqdm(data_test):
+        Y.to(cfg.DEVICE)
         output = model(X)
         output = softmax(output)
         predictions.append(np.array([X.iloc[0]['ID'], output[0][0].item(), output[0][1].item(), output[0][2].item()]))
