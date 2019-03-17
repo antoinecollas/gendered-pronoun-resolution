@@ -12,7 +12,7 @@ def train(model, cfg, tensorboard_writer):
         output_values, Y_values = list(), list()
 
         for X, Y in data_training:
-            Y.to(cfg.DEVICE)
+            Y = Y.to(cfg.DEVICE)
             output = model(X)
             output_values.append(output)
             Y_values.append(Y)
