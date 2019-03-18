@@ -34,12 +34,12 @@ class Pooling(nn.Module):
         A = torch.stack(A)
         B = torch.stack(B)
         
-        return pronoun, A, B
+        return [pronoun, A, B]
 
 class Scorer(nn.Module):
     def __init__(self, d_proj, dropout=0.2, d_hid = 512):
         super(Scorer, self).__init__()
-        in_features = 2*d_proj
+        in_features = 3*d_proj
         self.mlp = nn.Sequential(
             nn.BatchNorm1d(in_features), 
             nn.Dropout(dropout),
@@ -55,9 +55,9 @@ class Scorer(nn.Module):
         )
 
     def forward(self, features):
-        features_A = torch.cat([features[0], features[1]], dim=1)
+        features_A = torch.cat([features[0], features[1], features[0]*features[1]], dim=1)
         score_A = self.mlp(features_A)
-        features_B = torch.cat([features[0], features[2]], dim=1)
+        features_B = torch.cat([features[0], features[2], features[0]*features[2]], dim=1)
         score_B = self.mlp(features_B)
         score_eps = features[0].new_zeros(score_A.shape)
         return torch.cat([score_eps, score_A, score_B], dim=1)
