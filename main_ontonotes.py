@@ -33,7 +33,7 @@ cfg.PATH_WEIGHTS_CLASSIFIER = 'weights_classifier_ontonotes'
 
 cfg.NB_EPOCHS = 20
 cfg.D_PROJ = 256
-cfg.BATCH_SIZE = 2 if cfg.DEBUG else 32
+cfg.BATCH_SIZE = 2 if cfg.DEBUG else 64
 cfg.EVALUATION_FREQUENCY = 1
 
 model = Model(cfg)
