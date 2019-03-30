@@ -8,3 +8,5 @@ weights_*
 gap-pred*
 archives/
 ontonotes/
+.ipynb_checkpoints
+coref.code-workspace
