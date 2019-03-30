@@ -20,3 +20,4 @@ dependencies:
   - GitPython
   - tensorflow-gpu
   - tensorboardX
+  - allennlp

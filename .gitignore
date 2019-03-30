@@ -6,3 +6,5 @@ gap-coreference/
 runs/
 weights_*
 gap-pred*
+archives/
+ontonotes/

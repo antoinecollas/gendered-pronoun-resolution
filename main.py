@@ -1,9 +1,10 @@
-import os, sys, torch, argparse
+import os, torch, argparse
 from git import Repo
 from neural_nets import Model
 from tensorboardX import SummaryWriter
 from train import train
 from test import test
+from utils import DataLoader
 
 class Cfg:
     pass
@@ -54,8 +55,11 @@ print('number of parameters in pooling:', torch.nn.utils.parameters_to_vector(mo
 print('number of parameters in mlp:', torch.nn.utils.parameters_to_vector(model.mlp.parameters()).shape[0])
 
 if cfg.TRAIN:
-    train(model, cfg, writer)
+    data_training = DataLoader(cfg.TRAINING_PATH, cfg.BATCH_SIZE, shuffle=True, debug=cfg.DEBUG)
+    data_eval = DataLoader(cfg.VAL_PATH, cfg.BATCH_SIZE, shuffle=True, debug=cfg.DEBUG)
+    train(model, data_training, data_eval, cfg, writer)
 elif cfg.TEST:
     cfg.BATCH_SIZE = 1
+    data_test = DataLoader(cfg.TEST_PATH, cfg.BATCH_SIZE, shuffle=False, debug=cfg.DEBUG)
     model.load_parameters()
-    test(model, cfg)
+    test(model, data_test, cfg)

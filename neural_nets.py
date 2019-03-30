@@ -1,8 +1,9 @@
-import torch, sys
+import torch
 import torch.nn as nn
 from torch.nn.functional import softmax
 from pytorch_pretrained_bert import BertTokenizer, BertModel
 from utils import preprocess_data, get_vect_from_pos
+import pandas as pd
 
 class Pooling(nn.Module):
     def __init__(self, in_features, d_proj=256):
@@ -51,7 +52,7 @@ class MLP(nn.Module):
             nn.ReLU(),
             nn.BatchNorm1d(d_hid),
             nn.Dropout(dropout),
-            nn.Linear(d_hid, 3),
+            nn.Linear(d_hid, 4), #none, A, B, A&B
         )
 
     def forward(self, features):
@@ -77,6 +78,9 @@ class Model():
         self.PATH_WEIGHTS_CLASSIFIER = cfg.PATH_WEIGHTS_CLASSIFIER
 
     def __call__(self, X):
+        pd.set_option('display.max_rows', 500)
+        pd.set_option('display.max_columns', 500)
+        
         tokens, attention_mask, pos = preprocess_data(X, self.tokenizer, self.DEVICE, self.PAD_ID)
         with torch.no_grad():
             encoded_layers, _ = self.bert(tokens, attention_mask=attention_mask, output_all_encoded_layers=True)

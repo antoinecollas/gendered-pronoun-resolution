@@ -1,14 +1,13 @@
-import sys, torch
+import torch
 from tqdm import tqdm
-from utils import DataLoader, compute_word_pos, pad, get_vect_from_pos, preprocess_data, print_tensorboard
+from utils import compute_word_pos, pad, get_vect_from_pos, print_tensorboard
 
-def train(model, cfg, tensorboard_writer):
+def train(model, data_training, data_eval, cfg, tensorboard_writer):
     loss = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr = 0.0001)
 
     for epoch in tqdm(range(cfg.NB_EPOCHS)):
         model.train()
-        data_training = DataLoader(cfg.TRAINING_PATH, cfg.BATCH_SIZE, shuffle=True, debug=cfg.DEBUG)
         output_values, Y_values = list(), list()
 
         for X, Y in data_training:
@@ -27,7 +26,6 @@ def train(model, cfg, tensorboard_writer):
         loss_value = loss(output_values, Y_values)
 
         if epoch%cfg.EVALUATION_FREQUENCY == 0:
-            data_eval = DataLoader(cfg.VAL_PATH, cfg.BATCH_SIZE, shuffle=True, debug=cfg.DEBUG)
             model.eval()
             output_values, Y_values = list(), list()
 

@@ -18,3 +18,4 @@ dependencies:
   - GitPython
   - tensorflow
   - tensorboardX
+  - allennlp

@@ -1,14 +1,13 @@
-import sys, torch, csv
+import torch, csv
 from tqdm import tqdm
-from utils import DataLoader, compute_word_pos, pad, get_vect_from_pos, preprocess_data, print_tensorboard
+from utils import compute_word_pos, pad, get_vect_from_pos, print_tensorboard
 import numpy as np
 import torch.nn as nn
 
-def test(model, cfg):
+def test(model, data_test, cfg):
     model.eval()
     softmax = nn.Softmax(dim=1)
     predictions = list()
-    data_test = DataLoader(cfg.TEST_PATH, cfg.BATCH_SIZE, shuffle=False, debug=cfg.DEBUG)
 
     for X, Y in tqdm(data_test):
         Y = Y.to(cfg.DEVICE)
