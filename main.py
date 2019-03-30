@@ -35,11 +35,6 @@ cfg.TRAINING_PATH = os.path.join(FOLDER_DATA, 'gap-test.tsv')
 cfg.VAL_PATH = os.path.join(FOLDER_DATA, 'gap-validation.tsv')
 cfg.TEST_PATH = os.path.join(FOLDER_DATA, 'gap-development.tsv')
 
-cfg.PATH_WEIGHTS_POOLING_ONTONOTES = 'weights_pooling_ontonotes'
-cfg.PATH_WEIGHTS_CLASSIFIER_ONTONOTES = 'weights_classifier_ontonotes'
-cfg.PATH_WEIGHTS_POOLING = 'weights_pooling'
-cfg.PATH_WEIGHTS_CLASSIFIER = 'weights_classifier'
-
 FOLDER_RESULTS = 'results'
 if not os.path.exists(FOLDER_RESULTS):
     os.mkdir(FOLDER_RESULTS)
@@ -51,7 +46,19 @@ cfg.D_PROJ = 256
 cfg.BATCH_SIZE = 2 if cfg.DEBUG else 32
 cfg.EVALUATION_FREQUENCY = 1
 
+if cfg.TRAIN:
+    cfg.PATH_WEIGHTS_POOLING_LOAD = 'weights_pooling_ontonotes'
+    cfg.PATH_WEIGHTS_CLASSIFIER_LOAD = 'weights_classifier_ontonotes'
+    cfg.PATH_WEIGHTS_POOLING_SAVE = 'weights_pooling'
+    cfg.PATH_WEIGHTS_CLASSIFIER_SAVE = 'weights_classifier'
+elif cfg.TEST:
+    cfg.PATH_WEIGHTS_POOLING_LOAD = 'weights_pooling'
+    cfg.PATH_WEIGHTS_CLASSIFIER_LOAD = 'weights_classifier'
+    cfg.PATH_WEIGHTS_POOLING_SAVE = None
+    cfg.PATH_WEIGHTS_CLASSIFIER_SAVE = None
+
 model = Model(cfg)
+model.load_parameters()
 
 print('number of parameters in pooling:', torch.nn.utils.parameters_to_vector(model.pooling.parameters()).shape[0])
 print('number of parameters in mlp:', torch.nn.utils.parameters_to_vector(model.mlp.parameters()).shape[0])
@@ -59,10 +66,8 @@ print('number of parameters in mlp:', torch.nn.utils.parameters_to_vector(model.
 if cfg.TRAIN:
     data_training = DataLoader(cfg.TRAINING_PATH, cfg.BATCH_SIZE, shuffle=True, debug=cfg.DEBUG)
     data_eval = DataLoader(cfg.VAL_PATH, cfg.BATCH_SIZE, shuffle=True, debug=cfg.DEBUG)
-    model.load_parameters_ontonotes()
     train(model, data_training, data_eval, cfg, writer)
 elif cfg.TEST:
     cfg.BATCH_SIZE = 1
     data_test = DataLoader(cfg.TEST_PATH, cfg.BATCH_SIZE, shuffle=False, debug=cfg.DEBUG)
-    model.load_parameters()
     test(model, data_test, cfg)

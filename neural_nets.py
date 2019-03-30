@@ -74,10 +74,10 @@ class Model():
         self.mlp = MLP(cfg.D_PROJ)
         self.mlp.to(cfg.DEVICE)
         self.DEVICE = cfg.DEVICE
-        self.PATH_WEIGHTS_POOLING_ONTONOTES = cfg.PATH_WEIGHTS_POOLING_ONTONOTES
-        self.PATH_WEIGHTS_CLASSIFIER_ONTONOTES = cfg.PATH_WEIGHTS_CLASSIFIER_ONTONOTES
-        self.PATH_WEIGHTS_POOLING = cfg.PATH_WEIGHTS_POOLING
-        self.PATH_WEIGHTS_CLASSIFIER = cfg.PATH_WEIGHTS_CLASSIFIER
+        self.PATH_WEIGHTS_POOLING_LOAD = cfg.PATH_WEIGHTS_POOLING_LOAD
+        self.PATH_WEIGHTS_CLASSIFIER_LOAD = cfg.PATH_WEIGHTS_CLASSIFIER_LOAD
+        self.PATH_WEIGHTS_POOLING_SAVE = cfg.PATH_WEIGHTS_POOLING_SAVE
+        self.PATH_WEIGHTS_CLASSIFIER_SAVE = cfg.PATH_WEIGHTS_CLASSIFIER_SAVE
 
     def __call__(self, X):
         pd.set_option('display.max_rows', 500)
@@ -97,17 +97,12 @@ class Model():
         return list(self.pooling.parameters()) + list(self.mlp.parameters())
 
     def save_parameters(self):
-        torch.save(self.pooling.state_dict(), self.PATH_WEIGHTS_POOLING)
-        torch.save(self.mlp.state_dict(), self.PATH_WEIGHTS_CLASSIFIER)
-
-    def load_parameters_ontonotes(self):
-        print('Loading OntoNotes parameters.')
-        self.pooling.load_state_dict(torch.load(self.PATH_WEIGHTS_POOLING_ONTONOTES))
-        self.mlp.load_state_dict(torch.load(self.PATH_WEIGHTS_CLASSIFIER_ONTONOTES))
+        torch.save(self.pooling.state_dict(), self.PATH_WEIGHTS_POOLING_SAVE)
+        torch.save(self.mlp.state_dict(), self.PATH_WEIGHTS_CLASSIFIER_SAVE)
 
     def load_parameters(self):
-        self.pooling.load_state_dict(torch.load(self.PATH_WEIGHTS_POOLING))
-        self.mlp.load_state_dict(torch.load(self.PATH_WEIGHTS_CLASSIFIER))
+        self.pooling.load_state_dict(torch.load(self.PATH_WEIGHTS_POOLING_LOAD))
+        self.mlp.load_state_dict(torch.load(self.PATH_WEIGHTS_CLASSIFIER_LOAD))
 
     def train(self):
         self.pooling.train()

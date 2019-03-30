@@ -38,6 +38,11 @@ cfg.D_PROJ = 256
 cfg.BATCH_SIZE = 2 if cfg.DEBUG else 32
 cfg.EVALUATION_FREQUENCY = 1
 
+cfg.PATH_WEIGHTS_POOLING_LOAD = None
+cfg.PATH_WEIGHTS_CLASSIFIER_LOAD = None
+cfg.PATH_WEIGHTS_POOLING_SAVE = 'weights_pooling_ontonotes'
+cfg.PATH_WEIGHTS_CLASSIFIER_SAVE = 'weights_classifier_ontonotes'
+
 model = Model(cfg)
 
 print('number of parameters in pooling:', torch.nn.utils.parameters_to_vector(model.pooling.parameters()).shape[0])
