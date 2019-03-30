@@ -74,6 +74,8 @@ class Model():
         self.mlp = MLP(cfg.D_PROJ)
         self.mlp.to(cfg.DEVICE)
         self.DEVICE = cfg.DEVICE
+        self.PATH_WEIGHTS_POOLING_ONTONOTES = cfg.PATH_WEIGHTS_POOLING_ONTONOTES
+        self.PATH_WEIGHTS_CLASSIFIER_ONTONOTES = cfg.PATH_WEIGHTS_CLASSIFIER_ONTONOTES
         self.PATH_WEIGHTS_POOLING = cfg.PATH_WEIGHTS_POOLING
         self.PATH_WEIGHTS_CLASSIFIER = cfg.PATH_WEIGHTS_CLASSIFIER
 
@@ -97,6 +99,11 @@ class Model():
     def save_parameters(self):
         torch.save(self.pooling.state_dict(), self.PATH_WEIGHTS_POOLING)
         torch.save(self.mlp.state_dict(), self.PATH_WEIGHTS_CLASSIFIER)
+
+    def load_parameters_ontonotes(self):
+        print('Loading OntoNotes parameters.')
+        self.pooling.load_state_dict(torch.load(self.PATH_WEIGHTS_POOLING_ONTONOTES))
+        self.mlp.load_state_dict(torch.load(self.PATH_WEIGHTS_CLASSIFIER_ONTONOTES))
 
     def load_parameters(self):
         self.pooling.load_state_dict(torch.load(self.PATH_WEIGHTS_POOLING))

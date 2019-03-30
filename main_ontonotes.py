@@ -31,7 +31,7 @@ cfg.VAL_PATH = os.path.join(FOLDER_DATA, 'development.json')
 cfg.PATH_WEIGHTS_POOLING = 'weights_pooling_ontonotes'
 cfg.PATH_WEIGHTS_CLASSIFIER = 'weights_classifier_ontonotes'
 
-cfg.NB_EPOCHS = 1000
+cfg.NB_EPOCHS = 8
 cfg.D_PROJ = 256
 cfg.BATCH_SIZE = 2 if cfg.DEBUG else 32
 cfg.EVALUATION_FREQUENCY = 1

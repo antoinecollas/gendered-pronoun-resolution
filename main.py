@@ -35,6 +35,8 @@ cfg.TRAINING_PATH = os.path.join(FOLDER_DATA, 'gap-test.tsv')
 cfg.VAL_PATH = os.path.join(FOLDER_DATA, 'gap-validation.tsv')
 cfg.TEST_PATH = os.path.join(FOLDER_DATA, 'gap-development.tsv')
 
+cfg.PATH_WEIGHTS_POOLING_ONTONOTES = 'weights_pooling_ontonotes'
+cfg.PATH_WEIGHTS_CLASSIFIER_ONTONOTES = 'weights_classifier_ontonotes'
 cfg.PATH_WEIGHTS_POOLING = 'weights_pooling'
 cfg.PATH_WEIGHTS_CLASSIFIER = 'weights_classifier'
 
@@ -57,6 +59,7 @@ print('number of parameters in mlp:', torch.nn.utils.parameters_to_vector(model.
 if cfg.TRAIN:
     data_training = DataLoader(cfg.TRAINING_PATH, cfg.BATCH_SIZE, shuffle=True, debug=cfg.DEBUG)
     data_eval = DataLoader(cfg.VAL_PATH, cfg.BATCH_SIZE, shuffle=True, debug=cfg.DEBUG)
+    model.load_parameters_ontonotes()
     train(model, data_training, data_eval, cfg, writer)
 elif cfg.TEST:
     cfg.BATCH_SIZE = 1
