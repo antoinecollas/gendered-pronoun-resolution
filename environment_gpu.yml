@@ -21,3 +21,4 @@ dependencies:
   - tensorflow-gpu
   - tensorboardX
   - allennlp
+  - jsonlines
