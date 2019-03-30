@@ -42,6 +42,7 @@ cfg.TEST_PRED_GAP_SCORER_PATH = os.path.join(FOLDER_RESULTS, 'gap-pred-scorer-de
 cfg.TEST_PRED_KAGGLE_PATH = os.path.join(FOLDER_RESULTS, 'gap-pred-kaggle-development.csv')
 
 cfg.NB_EPOCHS = 20
+cfg.NB_OUTPUTS = 3
 cfg.D_PROJ = 256
 cfg.BATCH_SIZE = 2 if cfg.DEBUG else 32
 cfg.EVALUATION_FREQUENCY = 1

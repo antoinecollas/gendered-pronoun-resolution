@@ -38,8 +38,9 @@ class Pooling(nn.Module):
         return [pronoun, A, B]
 
 class MLP(nn.Module):
-    def __init__(self, d_proj, dropout=0.2, d_hid = 512):
+    def __init__(self, d_proj, nb_outputs, dropout=0.2, d_hid=512):
         super(MLP, self).__init__()
+        self.nb_outputs = nb_outputs
         in_features = 3*d_proj
         self.mlp = nn.Sequential(
             nn.BatchNorm1d(in_features), 
@@ -52,11 +53,16 @@ class MLP(nn.Module):
             nn.ReLU(),
             nn.BatchNorm1d(d_hid),
             nn.Dropout(dropout),
-            nn.Linear(d_hid, 4), #none, A, B, A&B
+            nn.Linear(d_hid, nb_outputs),
         )
 
     def forward(self, features):
         return self.mlp(features)
+    
+    def load_state_dict(self, state_dict):
+        state_dict['mlp.10.bias'] = state_dict['mlp.10.bias'][:self.nb_outputs]
+        state_dict['mlp.10.weight'] = state_dict['mlp.10.weight'][:self.nb_outputs,:]
+        super(MLP, self).load_state_dict(state_dict)
 
 class Model():
     def __init__(self, cfg):
@@ -71,7 +77,7 @@ class Model():
         self.PAD_ID = self.tokenizer.convert_tokens_to_ids(pad_token)[0]
         self.bert = BertModel.from_pretrained(BERT_MODEL)
         self.bert.to(cfg.DEVICE).eval()
-        self.mlp = MLP(cfg.D_PROJ)
+        self.mlp = MLP(cfg.D_PROJ, cfg.NB_OUTPUTS)
         self.mlp.to(cfg.DEVICE)
         self.DEVICE = cfg.DEVICE
         self.PATH_WEIGHTS_POOLING_LOAD = cfg.PATH_WEIGHTS_POOLING_LOAD
@@ -79,10 +85,7 @@ class Model():
         self.PATH_WEIGHTS_POOLING_SAVE = cfg.PATH_WEIGHTS_POOLING_SAVE
         self.PATH_WEIGHTS_CLASSIFIER_SAVE = cfg.PATH_WEIGHTS_CLASSIFIER_SAVE
 
-    def __call__(self, X):
-        pd.set_option('display.max_rows', 500)
-        pd.set_option('display.max_columns', 500)
-        
+    def __call__(self, X):        
         tokens, attention_mask, pos = preprocess_data(X, self.tokenizer, self.DEVICE, self.PAD_ID)
         with torch.no_grad():
             encoded_layers, _ = self.bert(tokens, attention_mask=attention_mask, output_all_encoded_layers=True)
