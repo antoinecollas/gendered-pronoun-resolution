@@ -279,11 +279,10 @@ class Ontonotes():
             for word in np.array(text)[0:target['pronoun'][0]]:
                 offset_pronoun += len(word)+1 # +1 for space char 
             
-            # sort nouns by order of appearance in text and select 2 random nouns
-            target['noun'].sort(key=lambda x: (x[0], x[1]))
+            # select 2 random nouns
             id_nouns = np.arange(len(target['noun']))
             np.random.shuffle(id_nouns)
-            id_nouns = np.sort(id_nouns[:2])
+            id_nouns = id_nouns[:2]
             labels = [int(target['label'][id_nouns[0]]), int(target['label'][id_nouns[1]])]
             noun_A = target['noun'][id_nouns[0]]
             string_A = text[noun_A[0]:noun_A[1]]
