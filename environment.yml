@@ -13,6 +13,7 @@ dependencies:
 - pytorch
 - tqdm
 - pandas
+- scikit-learn
 - pip:
   - pytorch-pretrained-bert
   - GitPython

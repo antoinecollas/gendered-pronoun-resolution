@@ -29,7 +29,7 @@ conda activate coref
 
 python main_ontonotes.py
 
-python main.py --train
+python main.py --train --use_pretrain_ontonotes
 
 python main.py --test
 
