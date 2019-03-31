@@ -14,12 +14,14 @@ parser = argparse.ArgumentParser(description='Training or testing model for core
 parser.add_argument('--debug', help='Debug mode.', action='store_true')
 parser.add_argument('--train', help='Training mode.', action='store_true')
 parser.add_argument('--test', help='Testing mode.', action='store_true')
+parser.add_argument('--use_pretrain_ontonotes', help='Use ontonotes pretrained weights.', action='store_true')
 args = parser.parse_args()
 if (args.train and args.test) or (not(args.train) and not(args.test)):
     raise ValueError('You have to use --train or --test option.')
 cfg.DEBUG = args.debug
 cfg.TRAIN = args.train
 cfg.TEST = args.test
+cfg.ONTONOTES = args.use_pretrain_ontonotes
 
 if cfg.DEBUG:
     print('============ DEBUG ============')
@@ -59,7 +61,9 @@ elif cfg.TEST:
     cfg.PATH_WEIGHTS_CLASSIFIER_SAVE = None
 
 model = Model(cfg)
-model.load_parameters()
+
+if (cfg.TRAIN and cfg.ONTONOTES) or cfg.TEST:
+    model.load_parameters()
 
 print('number of parameters in pooling:', torch.nn.utils.parameters_to_vector(model.pooling.parameters()).shape[0])
 print('number of parameters in mlp:', torch.nn.utils.parameters_to_vector(model.mlp.parameters()).shape[0])
