@@ -252,17 +252,23 @@ class Ontonotes():
             raise StopIteration
         temp = self.current_idx
         self.current_idx += self.batch_size
-        texts = self.texts[temp:self.current_idx]
-        targets = self.targets[temp:self.current_idx]
+        texts = self.texts
+        targets = self.targets
 
         columns = ['ID', 'Text', 'Pronoun', 'Pronoun-offset', 'A', 'A-offset', 'B', 'B-offset']
         X = pd.DataFrame(data=None, index=None, columns=columns, dtype=None, copy=False)
-        Y = torch.zeros(len(texts)).long()
+        Y = list()
 
-        for i, (text, target) in enumerate(zip(texts, targets)):
+        i = 0
+        while i < self.batch_size:
+            if self.current_idx >= len(self.texts):
+                self.current_idx = 0
+                raise StopIteration
+
+            text = np.array(texts[self.current_idx])
+            target = targets[self.current_idx]
+
             # X
-            text = np.array(text)
-
             # get full text
             string_text = ' '.join(text)
             
@@ -299,19 +305,24 @@ class Ontonotes():
             for word in np.array(text)[0:noun_B[0]]:
                 offset_B += len(word)+1 # +1 for space char 
 
-            X.loc[i] = ['NA', string_text, string_pronoun, offset_pronoun, string_A, offset_A, string_B, offset_B]
+            take_neither = np.random.binomial(1, p=0.5) # to reduce number of neither
 
-            # Y
-            if (labels[0] == 1) and (labels[1] == 0):
-                Y[i] = 1
-            elif (labels[0] == 0) and (labels[1] == 1):
-                Y[i] = 2
-            elif (labels[0] == 1) and (labels[1] == 1):
-                Y[i] = 3
+            if (not((labels[0] == 1) and (labels[1] == 1))) and (not(take_neither==0 and (labels[0] == 0) and (labels[1] == 0))):
+                X.loc[i] = ['NA', string_text, string_pronoun, offset_pronoun, string_A, offset_A, string_B, offset_B]
+                # Y
+                if (labels[0] == 0) and (labels[1] == 0):
+                    Y.append(0)
+                elif (labels[0] == 1) and (labels[1] == 0):
+                    Y.append(1)
+                elif (labels[0] == 0) and (labels[1] == 1):
+                    Y.append(2)
+                elif (labels[0] == 1) and (labels[1] == 1):
+                    Y.append(3)
+                i += 1
             
-        pd.set_option('display.max_rows', 500)
-        pd.set_option('display.max_columns', 500)
+            self.current_idx += 1
 
+        Y = torch.Tensor(Y).long()
         return X, Y
 
     def __len__(self):

@@ -47,7 +47,7 @@ def train(model, data_training, data_eval, cfg, tensorboard_writer):
             system_B = (Y_pred == 2)
             gold = torch.cat((gold_A, gold_B))
             system = torch.cat((system_A, system_B))
-            f1 = f1_score(gold, system)
+            f1 = f1_score(gold.cpu(), system.cpu())
 
             scalars = {
                 'training/cross_entropy': loss_value,
