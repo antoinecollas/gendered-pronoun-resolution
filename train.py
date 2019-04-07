@@ -17,6 +17,11 @@ def train(model, data_training, data_eval, cfg, tensorboard_writer):
             optimizer.zero_grad()
             output = loss(output_model, Y)
             output.backward()
+            # for p in model.parameters():
+            #     if p.grad is not None:
+            #         print(p.grad.shape)
+            #     else:
+            #         print('None grad:', p.shape)
             optimizer.step()
 
             output_values.append(output_model.detach_())

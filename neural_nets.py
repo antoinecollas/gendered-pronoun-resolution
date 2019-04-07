@@ -63,8 +63,9 @@ class MLP(nn.Module):
         state_dict['mlp.10.weight'] = state_dict['mlp.10.weight'][:self.nb_outputs,:]
         super(MLP, self).load_state_dict(state_dict)
 
-class Model():
+class Model(nn.Module):
     def __init__(self, cfg):
+        super(Model, self).__init__()
         if cfg.DEBUG:
             BERT_MODEL = 'bert-base-uncased'
             self.pooling = Pooling(768, cfg.D_PROJ).to(cfg.DEVICE)
@@ -75,24 +76,27 @@ class Model():
         pad_token = self.tokenizer.tokenize("[PAD]")
         self.PAD_ID = self.tokenizer.convert_tokens_to_ids(pad_token)[0]
         self.bert = BertModel.from_pretrained(BERT_MODEL)
-        self.bert.to(cfg.DEVICE).eval()
+        self.bert.to(cfg.DEVICE)
         self.ADD_FEATURES = cfg.ADD_FEATURES
         if self.ADD_FEATURES:
             self.mlp = MLP(3*cfg.D_PROJ + 42, cfg.NB_OUTPUTS)
         else:
             self.mlp = MLP(3*cfg.D_PROJ, cfg.NB_OUTPUTS)
         self.mlp.to(cfg.DEVICE)
+        self.TRAIN_END_2_END = cfg.TRAIN_END_2_END
         self.DEVICE = cfg.DEVICE
-        self.PATH_WEIGHTS_POOLING_LOAD = cfg.PATH_WEIGHTS_POOLING_LOAD
-        self.PATH_WEIGHTS_CLASSIFIER_LOAD = cfg.PATH_WEIGHTS_CLASSIFIER_LOAD
-        self.PATH_WEIGHTS_POOLING_SAVE = cfg.PATH_WEIGHTS_POOLING_SAVE
-        self.PATH_WEIGHTS_CLASSIFIER_SAVE = cfg.PATH_WEIGHTS_CLASSIFIER_SAVE
+        self.PATH_WEIGHTS_LOAD = cfg.PATH_WEIGHTS_LOAD
+        self.PATH_WEIGHTS_SAVE = cfg.PATH_WEIGHTS_SAVE
 
-    def __call__(self, X):        
+    def forward(self, X):        
         tokens, attention_mask, pos, features = preprocess_data(X, self.tokenizer, self.DEVICE, self.PAD_ID)
-        with torch.no_grad():
-            encoded_layers, _ = self.bert(tokens, attention_mask=attention_mask, output_all_encoded_layers=True)
-            encoded_layers = torch.stack(encoded_layers, dim=1)
+        if self.TRAIN_END_2_END:
+            encoded_layers, _ = self.bert(tokens, attention_mask=attention_mask, output_all_encoded_layers=False)
+            encoded_layers = encoded_layers.unsqueeze(1)
+        else:
+            with torch.no_grad():
+                encoded_layers, _ = self.bert(tokens, attention_mask=attention_mask, output_all_encoded_layers=True)
+                encoded_layers = torch.stack(encoded_layers, dim=1)
         vect_wordpiece = get_vect_from_pos(encoded_layers, pos)
         embedding = self.pooling(vect_wordpiece)
         embedding = torch.cat(embedding, dim=1)
@@ -103,21 +107,8 @@ class Model():
         scores = self.mlp(features)
         return scores
 
-    def parameters(self):
-        return list(self.pooling.parameters()) + list(self.mlp.parameters())
-
     def save_parameters(self):
-        torch.save(self.pooling.state_dict(), self.PATH_WEIGHTS_POOLING_SAVE)
-        torch.save(self.mlp.state_dict(), self.PATH_WEIGHTS_CLASSIFIER_SAVE)
+        torch.save(self.state_dict(), self.PATH_WEIGHTS_SAVE)
 
     def load_parameters(self):
-        self.pooling.load_state_dict(torch.load(self.PATH_WEIGHTS_POOLING_LOAD))
-        self.mlp.load_state_dict(torch.load(self.PATH_WEIGHTS_CLASSIFIER_LOAD))
-
-    def train(self):
-        self.pooling.train()
-        self.mlp.train()
-
-    def eval(self):
-        self.pooling.eval()
-        self.mlp.eval()
+        self.load_state_dict(torch.load(self.PATH_WEIGHTS_LOAD))

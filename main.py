@@ -44,6 +44,7 @@ cfg.TEST_PRED_GAP_SCORER_PATH = os.path.join(FOLDER_RESULTS, 'gap-pred-scorer-de
 cfg.TEST_PRED_KAGGLE_PATH = os.path.join(FOLDER_RESULTS, 'gap-pred-kaggle-development.csv')
 
 cfg.ADD_FEATURES = False
+cfg.TRAIN_END_2_END = True
 cfg.NB_EPOCHS = 20
 cfg.NB_OUTPUTS = 3
 cfg.D_PROJ = 256
@@ -51,23 +52,21 @@ cfg.BATCH_SIZE = 2 if cfg.DEBUG else 32
 cfg.EVALUATION_FREQUENCY = 1
 
 if cfg.TRAIN:
-    cfg.PATH_WEIGHTS_POOLING_LOAD = 'weights_pooling_ontonotes'
-    cfg.PATH_WEIGHTS_CLASSIFIER_LOAD = 'weights_classifier_ontonotes'
-    cfg.PATH_WEIGHTS_POOLING_SAVE = 'weights_pooling'
-    cfg.PATH_WEIGHTS_CLASSIFIER_SAVE = 'weights_classifier'
+    cfg.PATH_WEIGHTS_LOAD = 'weights_ontonotes'
+    cfg.PATH_WEIGHTS_SAVE = 'weights'
 elif cfg.TEST:
-    cfg.PATH_WEIGHTS_POOLING_LOAD = 'weights_pooling'
-    cfg.PATH_WEIGHTS_CLASSIFIER_LOAD = 'weights_classifier'
-    cfg.PATH_WEIGHTS_POOLING_SAVE = None
-    cfg.PATH_WEIGHTS_CLASSIFIER_SAVE = None
+    cfg.PATH_WEIGHTS_LOAD = 'weights'
+    cfg.PATH_WEIGHTS_SAVE = None
 
 model = Model(cfg)
 
 if (cfg.TRAIN and cfg.ONTONOTES) or cfg.TEST:
     model.load_parameters()
 
+print('number of parameters in BERT:', torch.nn.utils.parameters_to_vector(model.bert.parameters()).shape[0])
 print('number of parameters in pooling:', torch.nn.utils.parameters_to_vector(model.pooling.parameters()).shape[0])
 print('number of parameters in mlp:', torch.nn.utils.parameters_to_vector(model.mlp.parameters()).shape[0])
+print('total number of parameters:', torch.nn.utils.parameters_to_vector(model.parameters()).shape[0])
 
 if cfg.TRAIN:
     data_training = DataLoader(cfg.TRAINING_PATH, cfg.BATCH_SIZE, shuffle=True, debug=cfg.DEBUG)
