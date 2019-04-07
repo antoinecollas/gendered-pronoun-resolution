@@ -41,7 +41,7 @@ class MLP(nn.Module):
     def __init__(self, d_proj, nb_outputs, dropout=0.2, d_hid=512):
         super(MLP, self).__init__()
         self.nb_outputs = nb_outputs
-        in_features = 3*d_proj + 6 # add number of features
+        in_features = 3*d_proj + 42 # add number of features
         self.mlp = nn.Sequential(
             nn.BatchNorm1d(in_features), 
             nn.Dropout(dropout),

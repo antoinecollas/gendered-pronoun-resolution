@@ -158,7 +158,10 @@ def preprocess_data(X, BERT_tokenizer, device, pad_id):
         features_pronoun = get_mention_features(pos_pronoun, tokenized_text)
         features_A = get_mention_features(pos_A, tokenized_text)
         features_B = get_mention_features(pos_B, tokenized_text)
-        features.append([*features_pronoun, *features_A, *features_B])
+        dist_features_p_A = get_distance_features(pos_pronoun, pos_A)
+        dist_features_p_B = get_distance_features(pos_pronoun, pos_B)
+        dist_features_A_B = get_distance_features(pos_A, pos_B)
+        features.append([*features_pronoun, *features_A, *features_B, *dist_features_p_A, *dist_features_p_B, *dist_features_A_B])
 
     pos = torch.Tensor(pos).long()
 
@@ -174,6 +177,30 @@ def get_mention_features(pos, tokenized_text):
     pos_men = pos[0]/len(tokenized_text)
     len_men = pos[1]-pos[0]
     return [pos_men, len_men]
+
+def get_distance_features(pos_1, pos_2):
+    temp1 = pos_2[0] - pos_1[1]
+    temp2 = pos_1[0] - pos_2[1]
+    dist = max(temp1, temp2)
+    if dist<=0:
+        overlap = 1
+        dist = 0
+    else:
+        overlap = 0
+    dist_vect = [0] * 10
+    if dist<=4:
+        dist_vect[dist]=1
+    elif dist<=7:
+        dist_vect[5]=1
+    elif dist<=15:
+        dist_vect[6]=1
+    elif dist<=31:
+        dist_vect[7]=1
+    elif dist<=63:
+        dist_vect[8]=1
+    else:
+        dist_vect[9]=1
+    return [dist, *dist_vect, overlap]
 
 def print_tensorboard(writer, scalars, epoch):
     for key, value in scalars.items():
