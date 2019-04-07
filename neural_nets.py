@@ -38,10 +38,9 @@ class Pooling(nn.Module):
         return [pronoun, A, B]
 
 class MLP(nn.Module):
-    def __init__(self, d_proj, nb_outputs, dropout=0.2, d_hid=512):
+    def __init__(self, in_features, nb_outputs, dropout=0.2, d_hid=512):
         super(MLP, self).__init__()
         self.nb_outputs = nb_outputs
-        in_features = 3*d_proj + 42 # add number of features
         self.mlp = nn.Sequential(
             nn.BatchNorm1d(in_features), 
             nn.Dropout(dropout),
@@ -77,7 +76,11 @@ class Model():
         self.PAD_ID = self.tokenizer.convert_tokens_to_ids(pad_token)[0]
         self.bert = BertModel.from_pretrained(BERT_MODEL)
         self.bert.to(cfg.DEVICE).eval()
-        self.mlp = MLP(cfg.D_PROJ, cfg.NB_OUTPUTS)
+        self.ADD_FEATURES = cfg.ADD_FEATURES
+        if self.ADD_FEATURES:
+            self.mlp = MLP(3*cfg.D_PROJ + 42, cfg.NB_OUTPUTS)
+        else:
+            self.mlp = MLP(3*cfg.D_PROJ, cfg.NB_OUTPUTS)
         self.mlp.to(cfg.DEVICE)
         self.DEVICE = cfg.DEVICE
         self.PATH_WEIGHTS_POOLING_LOAD = cfg.PATH_WEIGHTS_POOLING_LOAD
@@ -93,7 +96,10 @@ class Model():
         vect_wordpiece = get_vect_from_pos(encoded_layers, pos)
         embedding = self.pooling(vect_wordpiece)
         embedding = torch.cat(embedding, dim=1)
-        features = torch.cat([embedding, features], dim=1)
+        if self.ADD_FEATURES:
+            features = torch.cat([embedding, features], dim=1)
+        else:
+            features = embedding
         scores = self.mlp(features)
         return scores
 
