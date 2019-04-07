@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import torch
 import torch.nn as nn
+from spacy.lang.en import English
 
 class DataLoader():
     def __init__(self, path, batch_size, shuffle=False, debug=False):
@@ -40,16 +41,21 @@ class DataLoader():
         Y = torch.argmax(Y, dim=1)
         return X, Y
 
-def compute_word_pos(raw_text, wordpiece, word, offset):
+def compute_word_pos(raw_text, wordpiece, word, offset, lower_raw_text=False, skip_first_tok=False):
     '''
     It computes the word position in the tokenized text from the raw text, the actual word and the offset.
 
     /!\ It assumes that every letters from the raw text are in word piece text.
     '''
-    word_pos_start, wp_pos = 1, 0
+    if skip_first_tok:
+        word_pos_start, wp_pos = 1, 0
+    else:
+        word_pos_start, wp_pos = 0, 0
     wp_ch = wordpiece[word_pos_start][wp_pos]
     for i in range(offset):
-        raw_ch = raw_text[i].lower()
+        raw_ch = raw_text[i]
+        if lower_raw_text:
+            raw_ch = raw_ch.lower()
         if raw_ch==' ':
             continue
         while wp_ch != raw_ch:
@@ -71,7 +77,8 @@ def compute_word_pos(raw_text, wordpiece, word, offset):
     wp_pos = 0
     wp_ch = wordpiece[word_pos_end][wp_pos]
     for raw_ch in word:
-        raw_ch = raw_ch.lower()
+        if lower_raw_text:
+            raw_ch = raw_ch.lower()
         if raw_ch == ' ':
             continue
         while wp_ch != raw_ch:
@@ -127,24 +134,46 @@ def get_vect_from_pos(encoded_layers, pos):
 
     return [vect_pronoun, vect_A, vect_B]
 
-def preprocess_data(X, tokenizer, device, pad_id):
-    tokens, pos = list(), list()
+def preprocess_data(X, BERT_tokenizer, device, pad_id):
+    features_tokenizer = English()
+
+    BERT_tokens, pos, features = list(), list(), list()
     for row in X.itertuples(index=False):
-        tokenized_text = ['[CLS]'] + tokenizer.tokenize(row.Text) + ['[SEP]']
-        indexed_tokens = tokenizer.convert_tokens_to_ids(tokenized_text)
-        tokens.append(indexed_tokens)
+        # BERT
+        tokenized_text = ['[CLS]'] + BERT_tokenizer.tokenize(row.Text) + ['[SEP]']
+        indexed_tokens = BERT_tokenizer.convert_tokens_to_ids(tokenized_text)
+        BERT_tokens.append(indexed_tokens)
+        pos_pronoun = compute_word_pos(row.Text, tokenized_text, row.Pronoun, row._3, lower_raw_text=True, skip_first_tok=True)
+        pos_A = compute_word_pos(row.Text, tokenized_text, row.A, row._5, lower_raw_text=True, skip_first_tok=True)
+        pos_B = compute_word_pos(row.Text, tokenized_text, row.B, row._7, lower_raw_text=True, skip_first_tok=True)
+        pos.append([pos_pronoun, pos_A, pos_B])
+
+        # features
+        tokens = features_tokenizer(row.Text)
+        tokenized_text = np.array([t.text for t in tokens])
         pos_pronoun = compute_word_pos(row.Text, tokenized_text, row.Pronoun, row._3)
         pos_A = compute_word_pos(row.Text, tokenized_text, row.A, row._5)
         pos_B = compute_word_pos(row.Text, tokenized_text, row.B, row._7)
-        pos.append([pos_pronoun, pos_A, pos_B])
+        
+        features_pronoun = get_mention_features(pos_pronoun, tokenized_text)
+        features_A = get_mention_features(pos_A, tokenized_text)
+        features_B = get_mention_features(pos_B, tokenized_text)
+        features.append([*features_pronoun, *features_A, *features_B])
+
     pos = torch.Tensor(pos).long()
 
-    tokens = pad(tokens, pad_id)
-    tokens = torch.tensor(tokens).to(device)
-    attention_mask = torch.ones(tokens.shape).to(device)
-    attention_mask[tokens==pad_id] = 0
+    BERT_tokens = pad(BERT_tokens, pad_id)
+    BERT_tokens = torch.tensor(BERT_tokens).to(device)
+    attention_mask = torch.ones(BERT_tokens.shape).to(device)
+    attention_mask[BERT_tokens==pad_id] = 0
+    features = torch.tensor(features).to(device)
 
-    return [tokens, attention_mask, pos]
+    return [BERT_tokens, attention_mask, pos, features]
+
+def get_mention_features(pos, tokenized_text):
+    pos_men = pos[0]/len(tokenized_text)
+    len_men = pos[1]-pos[0]
+    return [pos_men, len_men]
 
 def print_tensorboard(writer, scalars, epoch):
     for key, value in scalars.items():

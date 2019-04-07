@@ -41,7 +41,7 @@ class MLP(nn.Module):
     def __init__(self, d_proj, nb_outputs, dropout=0.2, d_hid=512):
         super(MLP, self).__init__()
         self.nb_outputs = nb_outputs
-        in_features = 3*d_proj
+        in_features = 3*d_proj + 6 # add number of features
         self.mlp = nn.Sequential(
             nn.BatchNorm1d(in_features), 
             nn.Dropout(dropout),
@@ -86,13 +86,14 @@ class Model():
         self.PATH_WEIGHTS_CLASSIFIER_SAVE = cfg.PATH_WEIGHTS_CLASSIFIER_SAVE
 
     def __call__(self, X):        
-        tokens, attention_mask, pos = preprocess_data(X, self.tokenizer, self.DEVICE, self.PAD_ID)
+        tokens, attention_mask, pos, features = preprocess_data(X, self.tokenizer, self.DEVICE, self.PAD_ID)
         with torch.no_grad():
             encoded_layers, _ = self.bert(tokens, attention_mask=attention_mask, output_all_encoded_layers=True)
             encoded_layers = torch.stack(encoded_layers, dim=1)
         vect_wordpiece = get_vect_from_pos(encoded_layers, pos)
-        features = self.pooling(vect_wordpiece)
-        features = torch.cat(features, dim=1)
+        embedding = self.pooling(vect_wordpiece)
+        embedding = torch.cat(embedding, dim=1)
+        features = torch.cat([embedding, features], dim=1)
         scores = self.mlp(features)
         return scores
 

@@ -16,6 +16,7 @@ dependencies:
 - tqdm
 - pandas
 - scikit-learn
+- spacy
 - pip:
   - pytorch-pretrained-bert
   - GitPython
