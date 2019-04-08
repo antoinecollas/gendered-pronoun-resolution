@@ -2,10 +2,22 @@ import torch
 from tqdm import tqdm
 from utils import compute_word_pos, pad, get_vect_from_pos, print_tensorboard
 from sklearn.metrics import f1_score
+from pytorch_pretrained_bert.optimization import BertAdam
 
 def train(model, data_training, data_eval, cfg, tensorboard_writer):
     loss = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr = 0.0001)
+
+    param_optimizer = list(model.named_parameters())
+    no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
+    optimizer_grouped_parameters = [
+        {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)], 'weight_decay': 0.01},
+        {'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
+        ]
+    num_train_optimization_steps = (len(data_training) / data_training.batch_size) * cfg.NB_EPOCHS
+    optimizer = BertAdam(optimizer_grouped_parameters,
+                                lr=5e-5,
+                                warmup=0.1,
+                                t_total=num_train_optimization_steps)
 
     for epoch in tqdm(range(cfg.NB_EPOCHS)):
         model.train()
@@ -17,13 +29,7 @@ def train(model, data_training, data_eval, cfg, tensorboard_writer):
             optimizer.zero_grad()
             output = loss(output_model, Y)
             output.backward()
-            # for p in model.parameters():
-            #     if p.grad is not None:
-            #         print(p.grad.shape)
-            #     else:
-            #         print('None grad:', p.shape)
             optimizer.step()
-
             output_values.append(output_model.detach_())
             Y_true.append(Y)
 
