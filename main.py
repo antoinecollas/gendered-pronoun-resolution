@@ -21,9 +21,6 @@ cfg = Cfg(args.debug, args.train, args.test, args.use_pretrain_ontonotes)
 model = Model(cfg)
 writer = SummaryWriter()
 
-if (cfg.TRAIN and cfg.ONTONOTES) or cfg.TEST:
-    model.load_parameters()
-
 print('number of parameters in BERT:', torch.nn.utils.parameters_to_vector(model.bert.parameters()).shape[0])
 print('number of parameters in pooling:', torch.nn.utils.parameters_to_vector(model.pooling.parameters()).shape[0])
 print('number of parameters in mlp:', torch.nn.utils.parameters_to_vector(model.mlp.parameters()).shape[0])

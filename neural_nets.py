@@ -87,6 +87,8 @@ class Model(nn.Module):
         self.DEVICE = cfg.DEVICE
         self.PATH_WEIGHTS_LOAD = cfg.PATH_WEIGHTS_LOAD
         self.PATH_WEIGHTS_SAVE = cfg.PATH_WEIGHTS_SAVE
+        if (cfg.TRAIN and cfg.ONTONOTES) or cfg.TEST:
+            model.load_parameters()
 
     def forward(self, X):        
         tokens, attention_mask, pos, features = preprocess_data(X, self.tokenizer, self.DEVICE, self.PAD_ID)

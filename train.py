@@ -15,7 +15,7 @@ def train(model, data_training, data_eval, cfg, tensorboard_writer):
         ]
     num_train_optimization_steps = (len(data_training) / data_training.batch_size) * cfg.NB_EPOCHS
     optimizer = BertAdam(optimizer_grouped_parameters,
-                                lr=5e-5,
+                                lr=cfg.LR,
                                 warmup=0.1,
                                 t_total=num_train_optimization_steps)
 
