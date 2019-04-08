@@ -9,7 +9,7 @@ class DataLoader():
     def __init__(self, path, batch_size, shuffle=False, debug=False):
         self.data = pd.read_csv(path, delimiter='\t')
         if debug:
-            self.data = self.data.iloc[0:10]
+            self.data = self.data.iloc[0:4]
         self.batch_size = batch_size
         self.current_idx = 0
         if shuffle:
