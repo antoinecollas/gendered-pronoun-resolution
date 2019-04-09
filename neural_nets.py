@@ -1,4 +1,4 @@
-import torch
+import torch, sys
 import torch.nn as nn
 from torch.nn.functional import softmax
 from pytorch_pretrained_bert import BertTokenizer, BertModel
@@ -43,15 +43,15 @@ class MLP(nn.Module):
         self.nb_outputs = nb_outputs
         self.mlp = nn.Sequential(
             nn.BatchNorm1d(in_features), 
-            nn.Dropout(dropout),
+            # nn.Dropout(dropout),
             nn.Linear(in_features, d_hid),
             nn.ReLU(), 
             nn.BatchNorm1d(d_hid), 
-            nn.Dropout(dropout),
+            # nn.Dropout(dropout),
             nn.Linear(d_hid, d_hid),
             nn.ReLU(),
             nn.BatchNorm1d(d_hid),
-            nn.Dropout(dropout),
+            # nn.Dropout(dropout),
             nn.Linear(d_hid, nb_outputs),
         )
 
@@ -88,9 +88,10 @@ class Model(nn.Module):
         self.PATH_WEIGHTS_LOAD = cfg.PATH_WEIGHTS_LOAD
         self.PATH_WEIGHTS_SAVE = cfg.PATH_WEIGHTS_SAVE
         if (cfg.TRAIN and cfg.ONTONOTES) or cfg.TEST:
-            model.load_parameters()
+            print('LOADING PARAMETERS')
+            self.load_parameters()
 
-    def forward(self, X):        
+    def forward(self, X):
         tokens, attention_mask, pos, features = preprocess_data(X, self.tokenizer, self.DEVICE, self.PAD_ID)
         if self.TRAIN_END_2_END:
             encoded_layers, _ = self.bert(tokens, attention_mask=attention_mask, output_all_encoded_layers=False)
@@ -114,3 +115,13 @@ class Model(nn.Module):
 
     def load_parameters(self):
         self.load_state_dict(torch.load(self.PATH_WEIGHTS_LOAD))
+
+    # def train(self):
+    #     self.bert.eval()
+    #     self.pooling.train()
+    #     self.mlp.train()
+
+    # def eval(self):
+    #     self.bert.eval()
+    #     self.pooling.eval()
+    #     self.mlp.eval()
