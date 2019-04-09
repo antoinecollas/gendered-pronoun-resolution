@@ -24,12 +24,11 @@ cfg = Cfg(DEBUG, TRAIN, TEST, ONTONOTES)
 cfg.LR = 1e-5
 list_cfgs.append((cfg, 'lr=1e-5'))
 
-model = Model(cfg)
-
-data_training = DataLoader(cfg.TRAINING_PATH, cfg.BATCH_SIZE, shuffle=True, debug=cfg.DEBUG)
-data_eval = DataLoader(cfg.VAL_PATH, cfg.BATCH_SIZE, shuffle=True, debug=cfg.DEBUG)
-
 for cfg in list_cfgs:
     print(cfg[1])
     writer = SummaryWriter(comment=cfg[1])
-    train(model, data_training, data_eval, cfg[0], writer)
+    cfg = cfg[0]
+    model = Model(cfg)
+    data_training = DataLoader(cfg.TRAINING_PATH, cfg.BATCH_SIZE, shuffle=True, debug=cfg.DEBUG)
+    data_eval = DataLoader(cfg.VAL_PATH, cfg.BATCH_SIZE, shuffle=True, debug=cfg.DEBUG)
+    train(model, data_training, data_eval, cfg, writer)

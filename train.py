@@ -40,14 +40,6 @@ def train(model, data_training, data_eval, cfg, tensorboard_writer):
             optimizer.zero_grad()
             output = loss(output_model, Y)
             output.backward()
-
-            # for n,p in model.named_parameters():
-            #     if p.grad is None:
-            #         print('None grad:', n)
-            #     else:
-            #         print(n, p.shape)
-            # sys.exit(0)
-
             optimizer.step()
             
             output_values.append(output_model.detach_())

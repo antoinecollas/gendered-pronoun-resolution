@@ -43,15 +43,15 @@ class MLP(nn.Module):
         self.nb_outputs = nb_outputs
         self.mlp = nn.Sequential(
             nn.BatchNorm1d(in_features), 
-            # nn.Dropout(dropout),
+            nn.Dropout(dropout),
             nn.Linear(in_features, d_hid),
             nn.ReLU(), 
             nn.BatchNorm1d(d_hid), 
-            # nn.Dropout(dropout),
+            nn.Dropout(dropout),
             nn.Linear(d_hid, d_hid),
             nn.ReLU(),
             nn.BatchNorm1d(d_hid),
-            # nn.Dropout(dropout),
+            nn.Dropout(dropout),
             nn.Linear(d_hid, nb_outputs),
         )
 
@@ -115,13 +115,3 @@ class Model(nn.Module):
 
     def load_parameters(self):
         self.load_state_dict(torch.load(self.PATH_WEIGHTS_LOAD))
-
-    # def train(self):
-    #     self.bert.eval()
-    #     self.pooling.train()
-    #     self.mlp.train()
-
-    # def eval(self):
-    #     self.bert.eval()
-    #     self.pooling.eval()
-    #     self.mlp.eval()
