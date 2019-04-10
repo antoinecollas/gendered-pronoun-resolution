@@ -43,15 +43,15 @@ class MLP(nn.Module):
         self.nb_outputs = nb_outputs
         self.mlp = nn.Sequential(
             # nn.BatchNorm1d(in_features), 
-            # nn.Dropout(dropout),
+            nn.Dropout(dropout),
             nn.Linear(in_features, d_hid),
             nn.ReLU(), 
             # nn.BatchNorm1d(d_hid), 
-            # nn.Dropout(dropout),
+            nn.Dropout(dropout),
             nn.Linear(d_hid, d_hid),
             nn.ReLU(),
             # nn.BatchNorm1d(d_hid),
-            # nn.Dropout(dropout),
+            nn.Dropout(dropout),
             nn.Linear(d_hid, nb_outputs),
         )
 
