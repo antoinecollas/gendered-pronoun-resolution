@@ -8,30 +8,20 @@ import numpy as np
 def train(model, data_training, data_eval, cfg, tensorboard_writer):
     loss = torch.nn.CrossEntropyLoss()
 
-    # param_optimizer = list(model.named_parameters())
-    # no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
-    # optimizer_grouped_parameters = [
-    #     {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)], 'weight_decay': 0.01},
-    #     {'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
-    #     ]
-    # num_train_optimization_steps = (len(data_training) / data_training.batch_size) * cfg.NB_EPOCHS
-    # optimizer = BertAdam(optimizer_grouped_parameters,
-    #                             lr=cfg.LR,
-    #                             warmup=0.1,
-    #                             t_total=num_train_optimization_steps)
-
-    optimizer = torch.optim.Adam(model.parameters(), lr=cfg.LR)
-
-    for p in model.bert.parameters():
-        p.requires_grad = False
-    for p in model.pooling.parameters():
-        p.requires_grad = True
-    for p in model.mlp.parameters():
-        p.requires_grad = True
-
+    param_optimizer = list(model.named_parameters())
+    no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
+    optimizer_grouped_parameters = [
+        {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)], 'weight_decay': 0.01},
+        {'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
+        ]
+    num_train_optimization_steps = (len(data_training) / data_training.batch_size) * cfg.NB_EPOCHS
+    optimizer = BertAdam(optimizer_grouped_parameters,
+                                lr=cfg.LR,
+                                warmup=0.1,
+                                t_total=num_train_optimization_steps)
+    
     for epoch in tqdm(range(cfg.NB_EPOCHS)):
         model.train()
-        model.bert.eval()
         output_values, Y_true, grad_norm = list(), list(), list()
 
         for X, Y in data_training:

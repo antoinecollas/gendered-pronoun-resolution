@@ -12,9 +12,6 @@ TEST = False
 ONTONOTES = False
 
 list_cfgs = list()
-cfg = Cfg(DEBUG, TRAIN, TEST, ONTONOTES)
-cfg.LR = 1e-3
-list_cfgs.append((cfg, 'lr=1e-3'))
 
 cfg = Cfg(DEBUG, TRAIN, TEST, ONTONOTES)
 cfg.LR = 1e-4
