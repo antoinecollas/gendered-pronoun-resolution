@@ -6,8 +6,9 @@ import torch.nn as nn
 from spacy.lang.en import English
 
 class DataLoader():
-    def __init__(self, path, batch_size, shuffle=False, debug=False):
+    def __init__(self, path, batch_size, endless_iterator, shuffle=False, debug=False):
         self.data = pd.read_csv(path, delimiter='\t')
+        self.endless_iterator = endless_iterator
         if debug:
             self.data = self.data.iloc[0:4]
         self.batch_size = batch_size
@@ -29,7 +30,8 @@ class DataLoader():
     def __next__(self):
         if self.current_idx>=len(self.data):
             self.current_idx = 0
-            raise StopIteration
+            if not self.endless_iterator:
+                raise StopIteration
         temp = self.current_idx
         self.current_idx += self.batch_size
         X =  self.data[['ID', 'Text', 'Pronoun', 'Pronoun-offset', 'A', 'A-offset', 'B', 'B-offset']].iloc[temp:self.current_idx]

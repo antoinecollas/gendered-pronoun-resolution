@@ -27,9 +27,9 @@ print('number of parameters in mlp:', torch.nn.utils.parameters_to_vector(model.
 print('total number of parameters:', torch.nn.utils.parameters_to_vector(model.parameters()).shape[0])
 
 if cfg.TRAIN:
-    data_training = DataLoader(cfg.TRAINING_PATH, cfg.BATCH_SIZE, shuffle=True, debug=cfg.DEBUG)
-    data_eval = DataLoader(cfg.VAL_PATH, cfg.BATCH_SIZE, shuffle=True, debug=cfg.DEBUG)
+    data_training = DataLoader(cfg.TRAINING_PATH, cfg.BATCH_SIZE, endless_iterator=True, shuffle=True, debug=cfg.DEBUG)
+    data_eval = DataLoader(cfg.VAL_PATH, cfg.BATCH_SIZE, endless_iterator=False, shuffle=True, debug=cfg.DEBUG)
     train(model, data_training, data_eval, cfg, writer)
 elif cfg.TEST:
-    data_test = DataLoader(cfg.TEST_PATH, cfg.BATCH_SIZE, shuffle=False, debug=cfg.DEBUG)
+    data_test = DataLoader(cfg.TEST_PATH, cfg.BATCH_SIZE, endless_iterator=False, shuffle=False, debug=cfg.DEBUG)
     test(model, data_test, cfg)

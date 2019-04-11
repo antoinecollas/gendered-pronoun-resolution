@@ -29,11 +29,11 @@ class Cfg():
 
         self.ADD_FEATURES = False
         self.TRAIN_END_2_END = True
-        self.NB_EPOCHS = 10
         self.NB_OUTPUTS = 3
         self.D_PROJ = 256
-        self.EVALUATION_FREQUENCY = 1
-        self.LR = 5e-5
+        self.NB_ITER = 20000
+        self.EVALUATION_FREQUENCY = 500
+        self.LR = 1e-5
 
         if self.TRAIN:
             self.PATH_WEIGHTS_LOAD = 'weights_ontonotes'

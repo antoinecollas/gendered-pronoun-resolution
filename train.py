@@ -14,39 +14,39 @@ def train(model, data_training, data_eval, cfg, tensorboard_writer):
         {'params': [p for n, p in param_optimizer if not any(nd in n for nd in no_decay)], 'weight_decay': 0.01},
         {'params': [p for n, p in param_optimizer if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
         ]
-    num_train_optimization_steps = (len(data_training) / data_training.batch_size) * cfg.NB_EPOCHS
     optimizer = BertAdam(optimizer_grouped_parameters,
                                 lr=cfg.LR,
                                 warmup=0.1,
-                                t_total=num_train_optimization_steps)
-    
-    for epoch in tqdm(range(cfg.NB_EPOCHS)):
+                                t_total=cfg.NB_ITER)
+
+    output_values, Y_true, grad_norm = list(), list(), list()
+
+    for i, (X, Y) in zip(tqdm(range(cfg.NB_ITER)), data_training):
         model.train()
-        output_values, Y_true, grad_norm = list(), list(), list()
 
-        for X, Y in data_training:
-            Y = Y.to(cfg.DEVICE)
-            output_model = model(X)
-            optimizer.zero_grad()
-            output = loss(output_model, Y)
-            output.backward()
-            optimizer.step()
-            
-            output_values.append(output_model.detach_())
-            Y_true.append(Y)
-            total_norm = 0
-            for p in model.parameters():
-                if p.grad is not None:
-                    param_norm = p.grad.data.norm(2)
-                    total_norm += param_norm.item() ** 2
-            grad_norm.append(total_norm ** (1./2))
+        Y = Y.to(cfg.DEVICE)
+        output_model = model(X)
+        optimizer.zero_grad()
+        output = loss(output_model, Y)
+        output.backward()
+        optimizer.step()
+        
+        output_values.append(output_model.detach_())
+        Y_true.append(Y)
+        total_norm = 0
+        for p in model.parameters():
+            if p.grad is not None:
+                param_norm = p.grad.data.norm(2)
+                total_norm += param_norm.item() ** 2
+        grad_norm.append(total_norm ** (1./2))
 
-        output_values = torch.cat(output_values)
-        Y_true = torch.cat(Y_true)
-        loss_value = loss(output_values, Y_true)
-
-        if epoch%cfg.EVALUATION_FREQUENCY == 0:
+        if (i+1)%cfg.EVALUATION_FREQUENCY == 0:
             model.eval()
+
+            output_values = torch.cat(output_values)
+            Y_true = torch.cat(Y_true)
+            loss_value = loss(output_values, Y_true)
+
             output_values, Y_true = list(), list()
 
             for X, Y in data_eval:
@@ -71,8 +71,10 @@ def train(model, data_training, data_eval, cfg, tensorboard_writer):
             scalars = {
                 'training/cross_entropy': loss_value,
                 'training/gradient_norm': np.mean(grad_norm),
-                'eval/cross_entropy'  : loss_value_eval,
-                'eval/f1'  : f1,
+                'eval/cross_entropy': loss_value_eval,
+                'eval/f1': f1,
             }
-            print_tensorboard(tensorboard_writer, scalars, epoch)
+            print_tensorboard(tensorboard_writer, scalars, i)
             model.save_parameters()
+
+            output_values, Y_true, grad_norm = list(), list(), list()
