@@ -15,8 +15,6 @@ list_cfgs = list()
 
 cfg = Cfg(DEBUG, TRAIN, TEST, ONTONOTES)
 cfg.LR = 1e-5
-cfg.NB_ITER = 40
-cfg.EVALUATION_FREQUENCY = 4
 list_cfgs.append((cfg, 'lr='+str(cfg.LR)))
 
 for cfg in list_cfgs:
