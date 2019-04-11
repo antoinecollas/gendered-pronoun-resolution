@@ -14,6 +14,7 @@ class DataLoader():
         self.batch_size = batch_size
         self.current_idx = 0
         if shuffle:
+            self.shuffle = shuffle
             order = np.arange(len(self.data))
             np.random.shuffle(order)
             self.data = self.data.iloc[order]
@@ -30,6 +31,10 @@ class DataLoader():
     def __next__(self):
         if self.current_idx>=len(self.data):
             self.current_idx = 0
+            if self.shuffle:
+                order = np.arange(len(self.data))
+                np.random.shuffle(order)
+                self.data = self.data.iloc[order]
             if not self.endless_iterator:
                 raise StopIteration
         temp = self.current_idx
