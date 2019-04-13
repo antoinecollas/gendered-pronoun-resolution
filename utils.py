@@ -237,7 +237,7 @@ def theta_prominence(tokens, mult = 1):
         elif t.dep_.startswith('poss'): score = 0.3
         else: score = 0.1
         scores.append(score)
-    score = np.mean(score)
+    score = np.mean(scores)
     return min(1, score * mult)
 
 def print_tensorboard(writer, scalars, epoch):
