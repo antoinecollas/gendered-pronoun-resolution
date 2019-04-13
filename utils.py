@@ -1,4 +1,5 @@
-import jsonlines, os
+import jsonlines, os, re, sys
+from urllib.parse import unquote
 import pandas as pd
 import numpy as np
 import torch
@@ -39,7 +40,7 @@ class DataLoader():
                 raise StopIteration
         temp = self.current_idx
         self.current_idx += self.batch_size
-        X =  self.data[['ID', 'Text', 'Pronoun', 'Pronoun-offset', 'A', 'A-offset', 'B', 'B-offset']].iloc[temp:self.current_idx]
+        X =  self.data[['ID', 'Text', 'Pronoun', 'Pronoun-offset', 'A', 'A-offset', 'B', 'B-offset', 'URL']].iloc[temp:self.current_idx]
         Y =  self.data[['A-coref', 'B-coref']].iloc[temp:self.current_idx]
         temp = torch.Tensor(Y.values.astype(int))
         Y = torch.zeros((Y.shape[0], Y.shape[1]+1)) 
@@ -141,6 +142,22 @@ def get_vect_from_pos(encoded_layers, pos):
 
     return [vect_pronoun, vect_A, vect_B]
 
+def subnames(name):
+    parts = name.split(' ')
+    subnames_ = []
+    for i in range(len(parts)): 
+        for j in range(i + 1, len(parts) + 1): 
+            sub = ' '.join(parts[i:j])
+            if len(sub) > 2: subnames_.append(sub)
+    return subnames_
+
+# Returns subsequences of a name unless potentially ambiguous (if another candidate picks out same subsequence)
+def nameset(name, candidate_dict):
+    if type(name) != str: name = candidate_dict[name]
+    subnames_ = [sn for sn in subnames(name)]
+    return [c for c in subnames_ if c not in sum([subnames(c) for c in candidate_dict.values() 
+                                                  if c not in subnames_ and name not in subnames(c)], [])]
+
 def preprocess_data(X, BERT_tokenizer, device, pad_id):
     features_tokenizer = English()
 
@@ -168,7 +185,19 @@ def preprocess_data(X, BERT_tokenizer, device, pad_id):
         dist_features_p_A = get_distance_features(pos_pronoun, pos_A)
         dist_features_p_B = get_distance_features(pos_pronoun, pos_B)
         dist_features_A_B = get_distance_features(pos_A, pos_B)
-        features.append([*features_pronoun, *features_A, *features_B, *dist_features_p_A, *dist_features_p_B, *dist_features_A_B])
+
+        url = row.URL.split('/')[-1].replace('_', ' ').lower()
+        subnames_url = url.split(' ')
+        a_url = 0
+        for subname_url in subnames_url:
+            if subname_url in row.A.lower():
+                a_url += 1
+        b_url = 0
+        for subname_url in subnames_url:
+            if subname_url in row.B.lower():
+                b_url += 1
+
+        features.append([*features_pronoun, *features_A, *features_B, *dist_features_p_A, *dist_features_p_B, *dist_features_A_B, a_url, b_url])
 
     pos = torch.Tensor(pos).long()
 

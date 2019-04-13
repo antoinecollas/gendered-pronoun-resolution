@@ -30,9 +30,11 @@ class Cfg():
         self.ADD_FEATURES = False
         self.TRAIN_END_2_END = True
         self.NB_OUTPUTS = 3
+        self.NB_ITER = 3000
+        self.EVALUATION_FREQUENCY = 250
+        self.DROPOUT = 0.2
         self.D_PROJ = 256
-        self.NB_ITER = 20000
-        self.EVALUATION_FREQUENCY = 500
+        self.D_HID = 512
         self.LR = 1e-5
 
         if self.TRAIN:
