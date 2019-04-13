@@ -13,8 +13,8 @@ class DataLoader():
             self.data = self.data.iloc[0:4]
         self.batch_size = batch_size
         self.current_idx = 0
+        self.shuffle = shuffle
         if shuffle:
-            self.shuffle = shuffle
             order = np.arange(len(self.data))
             np.random.shuffle(order)
             self.data = self.data.iloc[order]
