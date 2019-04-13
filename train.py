@@ -20,6 +20,7 @@ def train(model, data_training, data_eval, cfg, tensorboard_writer):
                                 t_total=cfg.NB_ITER)
 
     output_values, Y_true, grad_norm = list(), list(), list()
+    best_loss_value_eval = float('inf')
 
     for i, (X, Y) in zip(tqdm(range(cfg.NB_ITER)), data_training):
         model.train()
@@ -75,6 +76,8 @@ def train(model, data_training, data_eval, cfg, tensorboard_writer):
                 'eval/f1': f1,
             }
             print_tensorboard(tensorboard_writer, scalars, i)
-            model.save_parameters()
+            if loss_value_eval < best_loss_value_eval:
+                best_loss_value_eval = loss_value_eval
+                model.save_parameters()
 
             output_values, Y_true, grad_norm = list(), list(), list()
