@@ -4,6 +4,7 @@ from torch.nn.functional import softmax
 from pytorch_pretrained_bert import BertTokenizer, BertModel
 from utils import preprocess_data, get_vect_from_pos
 import pandas as pd
+import spacy
 
 class Pooling(nn.Module):
     def __init__(self, in_features, d_proj=256):
@@ -72,9 +73,10 @@ class Model(nn.Module):
         else:
             BERT_MODEL = 'bert-large-uncased'
             self.pooling = Pooling(1024, cfg.D_PROJ).to(cfg.DEVICE)
-        self.tokenizer = BertTokenizer.from_pretrained(BERT_MODEL, do_lower_case=True)
-        pad_token = self.tokenizer.tokenize("[PAD]")
-        self.PAD_ID = self.tokenizer.convert_tokens_to_ids(pad_token)[0]
+        self.spacy_tokenizer = spacy.load('en_core_web_lg')
+        self.bert_tokenizer = BertTokenizer.from_pretrained(BERT_MODEL, do_lower_case=True)
+        pad_token = self.bert_tokenizer.tokenize("[PAD]")
+        self.PAD_ID = self.bert_tokenizer.convert_tokens_to_ids(pad_token)[0]
         self.bert = BertModel.from_pretrained(BERT_MODEL)
         self.bert.to(cfg.DEVICE)
         self.ADD_FEATURES = cfg.ADD_FEATURES
@@ -92,7 +94,7 @@ class Model(nn.Module):
             self.load_parameters()
 
     def forward(self, X):
-        tokens, attention_mask, pos, features = preprocess_data(X, self.tokenizer, self.DEVICE, self.PAD_ID)
+        tokens, attention_mask, pos, features = preprocess_data(X, self.spacy_tokenizer, self.bert_tokenizer, self.DEVICE, self.PAD_ID)
         if self.TRAIN_END_2_END:
             encoded_layers, _ = self.bert(tokens, attention_mask=attention_mask, output_all_encoded_layers=False)
             encoded_layers = encoded_layers.unsqueeze(1)

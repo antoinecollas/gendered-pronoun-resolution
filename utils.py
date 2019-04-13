@@ -1,10 +1,9 @@
-import jsonlines, os, re, sys
+import jsonlines, os, re, sys, time
 from urllib.parse import unquote
 import pandas as pd
 import numpy as np
 import torch
 import torch.nn as nn
-import spacy
 
 class DataLoader():
     def __init__(self, path, batch_size, endless_iterator, shuffle=False, debug=False):
@@ -142,9 +141,7 @@ def get_vect_from_pos(encoded_layers, pos):
 
     return [vect_pronoun, vect_A, vect_B]
 
-def preprocess_data(X, BERT_tokenizer, device, pad_id):
-    nlp = spacy.load('en_core_web_lg')
-
+def preprocess_data(X, spacy_tokenizer, BERT_tokenizer, device, pad_id):
     BERT_tokens, pos, features = list(), list(), list()
     for row in X.itertuples(index=False):
         # BERT
@@ -157,7 +154,7 @@ def preprocess_data(X, BERT_tokenizer, device, pad_id):
         pos.append([pos_pronoun, pos_A, pos_B])
 
         # features
-        tokens = nlp(row.Text)
+        tokens = spacy_tokenizer(row.Text)
         tokenized_text = np.array([t.text for t in tokens])
         pos_pronoun = compute_word_pos(row.Text, tokenized_text, row.Pronoun, row._3)
         pos_A = compute_word_pos(row.Text, tokenized_text, row.A, row._5)
@@ -169,7 +166,7 @@ def preprocess_data(X, BERT_tokenizer, device, pad_id):
         dist_features_p_A = get_distance_features(pos_pronoun, pos_A)
         dist_features_p_B = get_distance_features(pos_pronoun, pos_B)
         dist_features_A_B = get_distance_features(pos_A, pos_B)
-
+    
         url = row.URL.split('/')[-1].replace('_', ' ').lower()
         subnames_url = url.split(' ')
         a_url = 0
