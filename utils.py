@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import torch
 import torch.nn as nn
-from spacy.lang.en import English
+import spacy
 
 class DataLoader():
     def __init__(self, path, batch_size, endless_iterator, shuffle=False, debug=False):
@@ -142,24 +142,8 @@ def get_vect_from_pos(encoded_layers, pos):
 
     return [vect_pronoun, vect_A, vect_B]
 
-def subnames(name):
-    parts = name.split(' ')
-    subnames_ = []
-    for i in range(len(parts)): 
-        for j in range(i + 1, len(parts) + 1): 
-            sub = ' '.join(parts[i:j])
-            if len(sub) > 2: subnames_.append(sub)
-    return subnames_
-
-# Returns subsequences of a name unless potentially ambiguous (if another candidate picks out same subsequence)
-def nameset(name, candidate_dict):
-    if type(name) != str: name = candidate_dict[name]
-    subnames_ = [sn for sn in subnames(name)]
-    return [c for c in subnames_ if c not in sum([subnames(c) for c in candidate_dict.values() 
-                                                  if c not in subnames_ and name not in subnames(c)], [])]
-
 def preprocess_data(X, BERT_tokenizer, device, pad_id):
-    features_tokenizer = English()
+    nlp = spacy.load('en_core_web_lg')
 
     BERT_tokens, pos, features = list(), list(), list()
     for row in X.itertuples(index=False):
@@ -173,12 +157,12 @@ def preprocess_data(X, BERT_tokenizer, device, pad_id):
         pos.append([pos_pronoun, pos_A, pos_B])
 
         # features
-        tokens = features_tokenizer(row.Text)
+        tokens = nlp(row.Text)
         tokenized_text = np.array([t.text for t in tokens])
         pos_pronoun = compute_word_pos(row.Text, tokenized_text, row.Pronoun, row._3)
         pos_A = compute_word_pos(row.Text, tokenized_text, row.A, row._5)
         pos_B = compute_word_pos(row.Text, tokenized_text, row.B, row._7)
-        
+
         features_pronoun = get_mention_features(pos_pronoun, tokenized_text)
         features_A = get_mention_features(pos_A, tokenized_text)
         features_B = get_mention_features(pos_B, tokenized_text)
@@ -196,8 +180,13 @@ def preprocess_data(X, BERT_tokenizer, device, pad_id):
         for subname_url in subnames_url:
             if subname_url in row.B.lower():
                 b_url += 1
+        
+        A = tokens[pos_A[0]:pos_A[1]]
+        theta_A = theta_prominence(A)
+        B = tokens[pos_B[0]:pos_B[1]]
+        theta_B = theta_prominence(B)
 
-        features.append([*features_pronoun, *features_A, *features_B, *dist_features_p_A, *dist_features_p_B, *dist_features_A_B, a_url, b_url])
+        features.append([*features_pronoun, *features_A, *features_B, *dist_features_p_A, *dist_features_p_B, *dist_features_A_B, a_url, b_url, theta_A, theta_B])
 
     pos = torch.Tensor(pos).long()
 
@@ -237,6 +226,22 @@ def get_distance_features(pos_1, pos_2):
     else:
         dist_vect[9]=1
     return [dist, *dist_vect, overlap]
+
+def theta_prominence(tokens, mult = 1):
+    scores = list()
+    for t in tokens:
+        while t.dep_ == 'compound': t = t.head
+        if t.dep_ == 'pobj': mult = 1.3 if t.head.i < t.head.head.i else 1
+        # if t._.domain.dep_ == 'advcl': mult = 1.3 if t.head.i < t._.domain.head.i else 1
+        if t.dep_.startswith('nsubj'): score = 1
+        elif t.dep_.startswith('dobj'): score = 0.8
+        elif t.dep_.startswith('dative'): score = 0.6
+        elif t.dep_.startswith('pobj'): score = 0.4
+        elif t.dep_.startswith('poss'): score = 0.3
+        else: score = 0.1
+        scores.append(score)
+    score = np.mean(score)
+    return min(1, score * mult)
 
 def print_tensorboard(writer, scalars, epoch):
     for key, value in scalars.items():

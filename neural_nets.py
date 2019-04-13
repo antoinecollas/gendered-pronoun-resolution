@@ -79,7 +79,7 @@ class Model(nn.Module):
         self.bert.to(cfg.DEVICE)
         self.ADD_FEATURES = cfg.ADD_FEATURES
         if self.ADD_FEATURES:
-            self.mlp = MLP(3*cfg.D_PROJ + 42, cfg.NB_OUTPUTS, cfg.DROPOUT, cfg.D_HID)
+            self.mlp = MLP(3*cfg.D_PROJ + 46, cfg.NB_OUTPUTS, cfg.DROPOUT, cfg.D_HID)
         else:
             self.mlp = MLP(3*cfg.D_PROJ, cfg.NB_OUTPUTS, cfg.DROPOUT, cfg.D_HID)
         self.mlp.to(cfg.DEVICE)

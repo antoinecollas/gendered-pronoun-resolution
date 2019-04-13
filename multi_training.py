@@ -13,9 +13,9 @@ ONTONOTES = False
 
 list_cfgs = list()
 
-cfg = Cfg(DEBUG, TRAIN, TEST, ONTONOTES)
-cfg.ADD_FEATURES = False
-list_cfgs.append((cfg, 'ADD_FEATURES='+str(cfg.ADD_FEATURES)))
+# cfg = Cfg(DEBUG, TRAIN, TEST, ONTONOTES)
+# cfg.ADD_FEATURES = False
+# list_cfgs.append((cfg, 'ADD_FEATURES='+str(cfg.ADD_FEATURES)))
 
 cfg = Cfg(DEBUG, TRAIN, TEST, ONTONOTES)
 cfg.ADD_FEATURES = True
