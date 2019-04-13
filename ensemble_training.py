@@ -1,8 +1,6 @@
-import torch
 from neural_nets import Model
 from tensorboardX import SummaryWriter
 from train import train
-from test import test
 from utils import DataLoader
 from cfg import Cfg
 
