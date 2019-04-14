@@ -34,8 +34,8 @@ class Cfg():
             self.NB_ITER = 10
             self.EVALUATION_FREQUENCY = 5
         else:
-            self.NB_ITER = 3000
-            self.EVALUATION_FREQUENCY = 250
+            self.NB_ITER = 2000
+            self.EVALUATION_FREQUENCY = 100
         self.DROPOUT = 0.2
         self.D_PROJ = 256
         self.D_HID = 512
