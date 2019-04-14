@@ -1,8 +1,6 @@
-import torch
 from neural_nets import Model
 from tensorboardX import SummaryWriter
 from train import train
-from test import test
 from utils import DataLoader
 from cfg import Cfg
 
@@ -13,13 +11,13 @@ ONTONOTES = False
 
 list_cfgs = list()
 
-# cfg = Cfg(DEBUG, TRAIN, TEST, ONTONOTES)
-# cfg.ADD_FEATURES = False
-# list_cfgs.append((cfg, 'ADD_FEATURES='+str(cfg.ADD_FEATURES)))
-
 cfg = Cfg(DEBUG, TRAIN, TEST, ONTONOTES)
-cfg.ADD_FEATURES = True
+cfg.ADD_FEATURES = False
 list_cfgs.append((cfg, 'ADD_FEATURES='+str(cfg.ADD_FEATURES)))
+
+# cfg = Cfg(DEBUG, TRAIN, TEST, ONTONOTES)
+# cfg.ADD_FEATURES = True
+# list_cfgs.append((cfg, 'ADD_FEATURES='+str(cfg.ADD_FEATURES)))
 
 for cfg in list_cfgs:
     print(cfg[1])
