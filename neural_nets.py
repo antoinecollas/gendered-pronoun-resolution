@@ -73,7 +73,7 @@ class Model(nn.Module):
         else:
             BERT_MODEL = 'bert-large-uncased'
             self.pooling = Pooling(1024, cfg.D_PROJ).to(cfg.DEVICE)
-        self.spacy_tokenizer = spacy.load('en_core_web_lg')
+        self.spacy_tokenizer = spacy.load('en_core_web_sm')
         self.bert_tokenizer = BertTokenizer.from_pretrained(BERT_MODEL, do_lower_case=True)
         pad_token = self.bert_tokenizer.tokenize("[PAD]")
         self.PAD_ID = self.bert_tokenizer.convert_tokens_to_ids(pad_token)[0]
