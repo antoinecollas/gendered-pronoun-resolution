@@ -191,7 +191,7 @@ def preprocess_data(X, spacy_tokenizer, BERT_tokenizer, device, pad_id):
     BERT_tokens = torch.tensor(BERT_tokens).to(device)
     attention_mask = torch.ones(BERT_tokens.shape).to(device)
     attention_mask[BERT_tokens==pad_id] = 0
-    features = torch.tensor(features).to(device)
+    features = torch.tensor(features).float().to(device)
 
     return [BERT_tokens, attention_mask, pos, features]
 
