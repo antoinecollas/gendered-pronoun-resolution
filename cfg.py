@@ -17,9 +17,10 @@ class Cfg():
         FOLDER_DATA = 'gap_coreference'
         if not os.path.exists(FOLDER_DATA):
             Repo.clone_from('https://github.com/antoinecollas/gap-coreference', FOLDER_DATA)
-        self.TRAINING_PATH = os.path.join(FOLDER_DATA, 'gap-test.tsv')
+        self.TRAINING_PATH = os.path.join(FOLDER_DATA, 'gap-test-development.tsv')
         self.VAL_PATH = os.path.join(FOLDER_DATA, 'gap-validation.tsv')
-        self.TEST_PATH = os.path.join(FOLDER_DATA, 'gap-development.tsv')
+        # self.TEST_PATH = os.path.join(FOLDER_DATA, 'gap-validation.tsv')
+        self.TEST_PATH = os.path.join(FOLDER_DATA, 'test_stage_2.tsv')
 
         FOLDER_RESULTS = 'results'
         if not os.path.exists(FOLDER_RESULTS):

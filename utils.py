@@ -40,12 +40,15 @@ class DataLoader():
         temp = self.current_idx
         self.current_idx += self.batch_size
         X =  self.data[['ID', 'Text', 'Pronoun', 'Pronoun-offset', 'A', 'A-offset', 'B', 'B-offset', 'URL']].iloc[temp:self.current_idx]
-        Y =  self.data[['A-coref', 'B-coref']].iloc[temp:self.current_idx]
-        temp = torch.Tensor(Y.values.astype(int))
-        Y = torch.zeros((Y.shape[0], Y.shape[1]+1)) 
-        Y[:,0:2] = temp
-        Y[:,2] = 1 - Y.sum(dim=1)
-        Y = torch.argmax(Y, dim=1)
+        if ('A-coref' in self.data.index) and ('B-coref' in self.data.index):
+            Y =  self.data[['A-coref', 'B-coref']].iloc[temp:self.current_idx]
+            temp = torch.Tensor(Y.values.astype(int))
+            Y = torch.zeros((Y.shape[0], Y.shape[1]+1)) 
+            Y[:,0:2] = temp
+            Y[:,2] = 1 - Y.sum(dim=1)
+            Y = torch.argmax(Y, dim=1)
+        else:
+            Y = None
         return X, Y
 
 def compute_word_pos(raw_text, wordpiece, word, offset, lower_raw_text=False, skip_first_tok=False):

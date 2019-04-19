@@ -14,8 +14,7 @@ def test(models, data_test, cfg):
         softmax = nn.Softmax(dim=1)
         ids = list()
 
-        for j, (X, Y) in enumerate(tqdm(data_test)):
-            Y = Y.to(cfg.DEVICE)
+        for j, (X, _) in enumerate(tqdm(data_test)):
             output = model(X)
             output = softmax(output)
             ids.append(X.iloc[0]['ID'])
