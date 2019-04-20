@@ -104,7 +104,8 @@ def compute_word_pos(raw_text, wordpiece, word, offset, lower_raw_text=False, sk
         else:
             word_pos_end += 1
             wp_pos = 0
-        wp_ch = wordpiece[word_pos_end][wp_pos]
+        if (word_pos_end<len(wordpiece)):
+            wp_ch = wordpiece[word_pos_end][wp_pos]
 
     return [word_pos_start, word_pos_end]
 
